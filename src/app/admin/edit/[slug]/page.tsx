@@ -39,18 +39,36 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
-function DotMenu({ onDelete }: { onDelete: () => void }) {
+function DotMenu({ onDelete, onCopy, onCopyToPage }: { onDelete: () => void; onCopy: () => void; onCopyToPage: (targetSlug: string) => void }) {
   const [open, setOpen] = useState(false);
+  const [showPages, setShowPages] = useState(false);
+  const [pages, setPages] = useState<{ slug: string; title: string }[]>([]);
+
+  function handleCopyTo() {
+    setShowPages(true);
+    fetch("/api/pages").then((r) => r.json()).then(setPages);
+  }
+
   return (
     <div className="relative">
-      <button onClick={(e) => { e.stopPropagation(); setOpen(!open); }} className="p-1 text-gray-400 hover:text-gray-600">
+      <button onClick={(e) => { e.stopPropagation(); setOpen(!open); setShowPages(false); }} className="p-1 text-gray-400 hover:text-gray-600">
         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg>
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-8 w-32 bg-white rounded-xl shadow-lg border border-gray-100 z-40 overflow-hidden">
-            <button onClick={() => { onDelete(); setOpen(false); }} className="w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 text-left">블럭 삭제</button>
+          <div className="fixed inset-0 z-30" onClick={() => { setOpen(false); setShowPages(false); }} />
+          <div className="absolute right-0 top-8 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-40 overflow-hidden">
+            <button onClick={() => { onCopy(); setOpen(false); }} className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 text-left">블럭 복사 (현재 페이지)</button>
+            <button onClick={handleCopyTo} className="w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 text-left">다른 페이지로 복사 &rarr;</button>
+            {showPages && (
+              <div className="border-t border-gray-100 max-h-[200px] overflow-y-auto">
+                {pages.map((p) => (
+                  <button key={p.slug} onClick={() => { onCopyToPage(p.slug); setOpen(false); setShowPages(false); }}
+                    className="w-full px-4 py-2 text-xs text-gray-600 hover:bg-blue-50 text-left truncate">{p.title}</button>
+                ))}
+              </div>
+            )}
+            <button onClick={() => { onDelete(); setOpen(false); }} className="w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 text-left border-t border-gray-100">블럭 삭제</button>
           </div>
         </>
       )}
@@ -161,7 +179,7 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
 // --- Sortable Link Block ---
 
 function SortableLinkBlock({
-  link, isOpen, onToggleOpen, onUpdate, onDelete, onToggleEnabled,
+  link, isOpen, onToggleOpen, onUpdate, onDelete, onToggleEnabled, onCopy, onCopyToPage,
 }: {
   link: LinkRow;
   isOpen: boolean;
@@ -169,6 +187,8 @@ function SortableLinkBlock({
   onUpdate: (id: string, updates: Partial<LinkRow>) => void;
   onDelete: (id: string) => void;
   onToggleEnabled: (id: string, enabled: boolean) => void;
+  onCopy: (id: string) => void;
+  onCopyToPage: (id: string, targetSlug: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id });
   const style = {
@@ -207,7 +227,7 @@ function SortableLinkBlock({
 
         {/* Right actions */}
         <div className="flex items-center gap-0.5 shrink-0">
-          <DotMenu onDelete={() => onDelete(link.id)} />
+          <DotMenu onDelete={() => onDelete(link.id)} onCopy={() => onCopy(link.id)} onCopyToPage={(targetSlug) => onCopyToPage(link.id, targetSlug)} />
           <button onClick={onToggleOpen}><Chevron open={isOpen} /></button>
         </div>
       </div>
@@ -325,6 +345,28 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     setLinks((prev) => prev.filter((l) => l.id !== id));
     await fetch(`/api/pages/${slug}/links`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
     refreshPreview();
+  }
+
+  async function copyLink(id: string) {
+    const link = links.find((l) => l.id === id);
+    if (!link) return;
+    await fetch(`/api/pages/${slug}/links`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: link.label, url: link.url, thumbnail: link.thumbnail, layout: link.layout, enabled: link.enabled, sort_order: links.length }),
+    });
+    await fetchAll();
+    setToast("블럭이 복사되었습니다");
+    refreshPreview();
+  }
+
+  async function copyLinkToPage(id: string, targetSlug: string) {
+    const link = links.find((l) => l.id === id);
+    if (!link) return;
+    await fetch(`/api/pages/${targetSlug}/links`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: link.label, url: link.url, thumbnail: link.thumbnail, layout: link.layout, enabled: link.enabled, sort_order: 999 }),
+    });
+    setToast(`"${targetSlug}" 페이지로 복사되었습니다`);
   }
 
   async function handleDragEnd(event: DragEndEvent) {
@@ -550,6 +592,8 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                     onUpdate={updateLink}
                     onDelete={deleteLink}
                     onToggleEnabled={(id, enabled) => updateLink(id, { enabled })}
+                    onCopy={copyLink}
+                    onCopyToPage={copyLinkToPage}
                   />
                 ))}
               </SortableContext>
