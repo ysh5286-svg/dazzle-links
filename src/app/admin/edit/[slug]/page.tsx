@@ -253,6 +253,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   const [desc, setDesc] = useState("");
   const [profile, setProfile] = useState("");
   const [newSlug, setNewSlug] = useState("");
+  const [category, setCategory] = useState("자사 채널");
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -274,6 +275,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     setDesc(data.page.desc || "");
     setProfile(data.page.profile || "");
     setNewSlug(data.page.slug);
+    setCategory(data.page.category || "자사 채널");
     setLoading(false);
   }, [slug, router]);
 
@@ -283,7 +285,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   async function savePageInfo() {
     setSaving(true);
     const cleanSlug = newSlug.toLowerCase().replace(/[^a-z0-9_.-]/g, "");
-    const updates: Record<string, string> = { title, desc, profile };
+    const updates: Record<string, string> = { title, desc, profile, category };
     if (cleanSlug && cleanSlug !== slug) {
       updates.slug = cleanSlug;
     }
@@ -472,6 +474,19 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">상세문구</label><input type="text" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="추가 설명" className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div>
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">이미지 URL</label><input type="text" value={profile} onChange={(e) => setProfile(e.target.value)} placeholder="https://..." className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div>
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">페이지 주소 (슬러그)</label><div className="flex items-center gap-1"><span className="text-xs text-gray-400 shrink-0">link.dazzlepeople.com/</span><input type="text" value={newSlug} onChange={(e) => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ""))} className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div></div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 mb-1 block">카테고리</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {["자사 채널", "협업 인플루언서", "파트너"].map((c) => (
+                        <button key={c} type="button" onClick={() => setCategory(c)}
+                          className={`px-4 py-2 rounded-lg text-xs font-medium border-2 transition-all ${category === c ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"}`}>
+                          {c}
+                        </button>
+                      ))}
+                      <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="직접 입력"
+                        className="px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gray-900 w-28" />
+                    </div>
+                  </div>
                   <button onClick={savePageInfo} disabled={saving} className="self-end px-6 py-2 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50">{saving ? "저장 중..." : "저장"}</button>
                 </div>
               )}

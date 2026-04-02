@@ -21,6 +21,8 @@ export type PageRow = {
   btn_shape: string;
   btn_action: string;
   font: string;
+  category: string;
+  sort_order: number;
 };
 
 export type LinkRow = {
