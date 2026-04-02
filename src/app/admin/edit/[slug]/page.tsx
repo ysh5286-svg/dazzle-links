@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { PageRow, LinkRow, SocialRow } from "@/lib/supabase";
 import PageSwitcher from "./page-switcher";
 import DesignTab from "./design-tab";
+import AdminChannelBar from "./admin-channel-bar";
 import {
   DndContext,
   closestCenter,
@@ -366,6 +367,9 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
       <PageSwitcher currentSlug={slug} currentProfile={profile} />
       {toast && <Toast message={toast} onClose={() => setToast("")} />}
       {showBlockModal && <BlockAddModal onClose={() => setShowBlockModal(false)} onSelect={handleBlockSelect} />}
+
+      {/* Admin Channel Bar */}
+      <AdminChannelBar currentSlug={slug} />
 
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0 z-10">
         <span className="text-xs text-gray-400">/{slug}</span>
