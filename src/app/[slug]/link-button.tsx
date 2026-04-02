@@ -8,17 +8,19 @@ export default function LinkButton({
   url,
   thumbnail,
   layout = "small",
+  btnClassName = "",
 }: {
   label: string;
   url: string;
   icon?: string;
   thumbnail?: string | null;
   layout?: string;
+  btnClassName?: string;
 }) {
   if (layout === "large") {
     return (
       <a href={url} target="_blank" rel="noopener noreferrer"
-        className="group w-full bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md active:scale-[0.98] transition-all duration-150 cursor-pointer overflow-hidden">
+        className={`group w-full border border-gray-100 shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer overflow-hidden ${btnClassName}`}>
         {thumbnail && (
           <div className="w-full h-40 overflow-hidden">
             <Image src={thumbnail} alt={label} width={480} height={160} className="w-full h-full object-cover" />
@@ -34,7 +36,7 @@ export default function LinkButton({
   if (layout === "medium") {
     return (
       <a href={url} target="_blank" rel="noopener noreferrer"
-        className="group flex items-center gap-4 w-full px-4 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md active:scale-[0.98] transition-all duration-150 cursor-pointer">
+        className={`group flex items-center gap-4 w-full px-4 py-3 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer ${btnClassName}`}>
         {thumbnail ? (
           <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
             <Image src={thumbnail} alt={label} width={80} height={80} className="w-full h-full object-cover" />
@@ -52,7 +54,7 @@ export default function LinkButton({
   // small (default)
   return (
     <a href={url} target="_blank" rel="noopener noreferrer"
-      className="group flex items-center gap-4 w-full px-4 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md active:scale-[0.98] transition-all duration-150 cursor-pointer">
+      className={`group flex items-center gap-4 w-full px-4 py-3 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer ${btnClassName}`}>
       {thumbnail ? (
         <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
           <Image src={thumbnail} alt={label} width={56} height={56} className="w-full h-full object-cover" />

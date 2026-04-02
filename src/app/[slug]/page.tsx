@@ -5,7 +5,22 @@ import { supabase } from "@/lib/supabase";
 import LinkButton from "./link-button";
 import SocialIcons from "./social-icons";
 
-export const revalidate = 60; // ISR: 60초마다 갱신
+export const revalidate = 60;
+
+const FONT_MAP: Record<string, string> = {
+  pretendard: "'Pretendard', -apple-system, sans-serif",
+  "noto-sans": "'Noto Sans KR', sans-serif",
+  gothic: "'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif",
+  "nanum-gothic": "'Nanum Gothic', sans-serif",
+  "nanum-square": "'NanumSquare', sans-serif",
+  gmarket: "'GmarketSans', sans-serif",
+};
+
+const SHAPE_MAP: Record<string, string> = {
+  rounded: "16px",
+  pill: "9999px",
+  square: "4px",
+};
 
 export async function generateMetadata({
   params,
@@ -49,64 +64,74 @@ export default async function SlugPage({
   }
 
   const [linksRes, socialsRes] = await Promise.all([
-    supabase
-      .from("links")
-      .select("*")
-      .eq("page_id", page.id)
-      .order("sort_order"),
-    supabase
-      .from("socials")
-      .select("*")
-      .eq("page_id", page.id)
-      .order("sort_order"),
+    supabase.from("links").select("*").eq("page_id", page.id).order("sort_order"),
+    supabase.from("socials").select("*").eq("page_id", page.id).order("sort_order"),
   ]);
 
   const links = (linksRes.data || []).filter((l: { enabled?: boolean }) => l.enabled !== false);
   const socials = socialsRes.data || [];
 
+  const bgColor = page.bg_color || "#f9fafb";
+  const btnColor = page.btn_color || "#ffffff";
+  const hoverColor = page.hover_color || "#e5e7eb";
+  const btnShape = SHAPE_MAP[page.btn_shape] || "16px";
+  const btnAction = page.btn_action || "fill";
+  const fontFamily = FONT_MAP[page.font] || FONT_MAP.pretendard;
+
   return (
-    <main className="w-full max-w-[480px] mx-auto px-5 pt-12 pb-10 flex flex-col items-center gap-8">
-      {/* Profile */}
-      <div className="flex flex-col items-center gap-3">
-        {page.profile && (
-          <div className="w-[100px] h-[100px] rounded-full overflow-hidden shadow-sm">
-            <Image
-              src={page.profile}
-              alt={page.title}
-              width={100}
-              height={100}
-              className="w-full h-full object-cover"
-            />
+    <>
+      <style>{`
+        body { background: ${bgColor}; font-family: ${fontFamily}; }
+        .link-btn {
+          background: ${btnColor};
+          border-radius: ${btnShape};
+          transition: all 0.15s ease;
+        }
+        .link-btn:hover {
+          ${btnAction === "fill" ? `background: ${hoverColor};` : ""}
+          ${btnAction === "scale" ? "transform: scale(1.03);" : ""}
+          ${btnAction === "shadow" ? `box-shadow: 0 8px 25px ${hoverColor}40;` : ""}
+          ${btnAction === "wave" ? `background: linear-gradient(90deg, ${btnColor}, ${hoverColor}, ${btnColor}); background-size: 200%; animation: wave 1s ease infinite;` : ""}
+        }
+        .link-btn:active { transform: scale(0.98); }
+        ${btnAction === "wave" ? "@keyframes wave { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }" : ""}
+      `}</style>
+      <main className="w-full max-w-[480px] mx-auto px-5 pt-12 pb-10 flex flex-col items-center gap-8">
+        {/* Profile */}
+        <div className="flex flex-col items-center gap-3">
+          {page.profile && (
+            <div className="w-[100px] h-[100px] rounded-full overflow-hidden shadow-sm">
+              <Image src={page.profile} alt={page.title} width={100} height={100} className="w-full h-full object-cover" />
+            </div>
+          )}
+          <h1 className="text-lg font-bold text-gray-900">{page.title}</h1>
+          {page.desc && (
+            <p className="text-sm text-gray-500 text-center leading-relaxed">{page.desc}</p>
+          )}
+        </div>
+
+        {/* SNS Icons */}
+        {socials.length > 0 && <SocialIcons socials={socials} />}
+
+        {/* Link Cards */}
+        {links.length > 0 && (
+          <div className="w-full flex flex-col gap-3">
+            {links.map((link) => (
+              <LinkButton
+                key={link.id}
+                label={link.label}
+                url={link.url}
+                thumbnail={link.thumbnail}
+                layout={link.layout}
+                btnClassName="link-btn"
+              />
+            ))}
           </div>
         )}
-        <h1 className="text-lg font-bold text-gray-900">{page.title}</h1>
-        {page.desc && (
-          <p className="text-sm text-gray-500 text-center leading-relaxed">
-            {page.desc}
-          </p>
-        )}
-      </div>
 
-      {/* SNS Icons */}
-      {socials.length > 0 && <SocialIcons socials={socials} />}
-
-      {/* Link Cards */}
-      {links.length > 0 && (
-        <div className="w-full flex flex-col gap-3">
-          {links.map((link) => (
-            <LinkButton
-              key={link.id}
-              label={link.label}
-              url={link.url}
-              thumbnail={link.thumbnail}
-              layout={link.layout}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Footer */}
-      <p className="mt-4 text-xs text-gray-300">Powered by Dazzle People</p>
-    </main>
+        {/* Footer */}
+        <p className="mt-4 text-xs text-gray-300">Powered by Dazzle People</p>
+      </main>
+    </>
   );
 }
