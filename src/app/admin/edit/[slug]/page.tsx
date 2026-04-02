@@ -539,6 +539,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   const [newSlug, setNewSlug] = useState("");
   const [category, setCategory] = useState("자사 채널");
   const [badgeColor, setBadgeColor] = useState<string | null>(null);
+  const [profileRing, setProfileRing] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -562,6 +563,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     setNewSlug(data.page.slug);
     setCategory(data.page.category || "자사 채널");
     setBadgeColor(data.page.badge_color || null);
+    setProfileRing(data.page.profile_ring || false);
     setLoading(false);
   }, [slug, router]);
 
@@ -578,7 +580,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   async function savePageInfo() {
     setSaving(true);
     const cleanSlug = newSlug.toLowerCase().replace(/[^a-z0-9_.-]/g, "");
-    const updates: Record<string, string | null> = { title, desc, profile, category, badge_color: badgeColor };
+    const updates: Record<string, string | null | boolean> = { title, desc, profile, category, badge_color: badgeColor, profile_ring: profileRing };
     if (cleanSlug && cleanSlug !== slug) {
       updates.slug = cleanSlug;
     }
@@ -844,6 +846,16 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">상세문구</label><input type="text" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="추가 설명" className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div>
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">이미지 URL</label><input type="text" value={profile} onChange={(e) => setProfile(e.target.value)} placeholder="https://..." className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div>
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">페이지 주소 (슬러그)</label><div className="flex items-center gap-1"><span className="text-xs text-gray-400 shrink-0">link.dazzlepeople.com/</span><input type="text" value={newSlug} onChange={(e) => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ""))} className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div></div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 mb-1 block">프로필 링 애니메이션</label>
+                    <button type="button" onClick={() => setProfileRing(!profileRing)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium border-2 transition-all ${profileRing ? "border-purple-500 bg-purple-50 text-purple-700" : "border-gray-200 text-gray-500 hover:border-gray-400"}`}>
+                      <div className={`w-6 h-6 rounded-full ${profileRing ? "profile-ring" : "bg-gray-200"}`} style={profileRing ? { background: "conic-gradient(#f58529, #dd2a7b, #8134af, #515bd4, #3b82f6, #58c322, #f58529)" } : {}}>
+                        <div className="w-full h-full rounded-full border-2 border-white" />
+                      </div>
+                      {profileRing ? "ON - 그라데이션 회전" : "OFF"}
+                    </button>
+                  </div>
                   <div>
                     <label className="text-xs font-medium text-gray-500 mb-1 block">검증 마크</label>
                     <div className="flex items-center gap-2 flex-wrap">

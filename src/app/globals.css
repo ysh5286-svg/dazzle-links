@@ -12,3 +12,13 @@
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 }
+
+/* Profile ring animation */
+.profile-ring {
+  background: conic-gradient(#f58529, #dd2a7b, #8134af, #515bd4, #3b82f6, #58c322, #f58529);
+  animation: ring-spin 3s linear infinite;
+}
+
+@keyframes ring-spin {
+  to { transform: rotate(360deg); }
+}

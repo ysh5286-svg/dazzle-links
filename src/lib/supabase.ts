@@ -24,6 +24,7 @@ export type PageRow = {
   category: string;
   sort_order: number;
   badge_color: string | null;
+  profile_ring: boolean;
 };
 
 export type LinkRow = {

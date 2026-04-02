@@ -8,6 +8,7 @@ import DesignPreviewListener from "./design-preview";
 import ChannelBar from "./channel-bar";
 import InlineVideo from "./inline-video";
 import VideoCarousel from "./video-carousel";
+import ShareButton from "./share-button";
 import ChatButton from "./chat-button";
 
 export const revalidate = 60;
@@ -141,12 +142,17 @@ export default async function SlugPage({
         label={allLinks.find((l: { layout?: string }) => l.layout === "kakaotalk")?.label}
       />
 
-      <main className="w-full max-w-[480px] mx-auto px-5 pt-4 pb-10 flex flex-col items-center gap-8">
+      <main className="w-full max-w-[480px] mx-auto px-5 pt-4 pb-10 flex flex-col items-center gap-8 relative">
+        {/* Share Button */}
+        <ShareButton />
+
         {/* Profile */}
         <div className="flex flex-col items-center gap-3">
           {page.profile && (
-            <div className="w-[100px] h-[100px] rounded-full overflow-hidden shadow-sm">
-              <Image src={page.profile} alt={page.title} width={100} height={100} className="w-full h-full object-cover" />
+            <div className={`w-[108px] h-[108px] rounded-full flex items-center justify-center ${page.profile_ring ? "profile-ring" : ""}`}>
+              <div className="w-[100px] h-[100px] rounded-full overflow-hidden shadow-sm border-[3px] border-white">
+                <Image src={page.profile} alt={page.title} width={100} height={100} className="w-full h-full object-cover" />
+              </div>
             </div>
           )}
           <h1 className="text-lg font-bold text-gray-900 flex items-center gap-1 justify-center">
