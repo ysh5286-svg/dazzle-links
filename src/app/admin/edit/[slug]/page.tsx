@@ -508,7 +508,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
           </div>
 
           {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-scroll">
             {activeTab === "design" && page ? (
               <DesignTab page={page} onSave={async (updates) => {
                 await fetch(`/api/pages/${slug}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updates) });
