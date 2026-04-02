@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use, useCallback } from "react";
+import { useEffect, useState, useRef, use, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { PageRow, LinkRow, SocialRow } from "@/lib/supabase";
 import PageSwitcher from "./page-switcher";
@@ -23,10 +23,10 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-const PLATFORMS = ["instagram", "facebook", "tiktok", "youtube", "naver", "kakaotalk"];
+const PLATFORMS = ["instagram", "facebook", "tiktok", "youtube", "naver", "kakaotalk", "website"];
 const PLATFORM_LABELS: Record<string, string> = {
   instagram: "인스타그램", facebook: "페이스북", tiktok: "틱톡",
-  youtube: "유튜브", naver: "네이버", kakaotalk: "카카오톡",
+  youtube: "유튜브", naver: "네이버", kakaotalk: "카카오톡", website: "홈페이지",
 };
 
 // --- Small Components ---
@@ -127,6 +127,156 @@ function LayoutSelector({ value, onChange }: { value: string; onChange: (v: stri
   );
 }
 
+// --- Spacer Editor ---
+
+function SpacerEditor({ height, lineStyle, onChange }: { height: number; lineStyle: string; onChange: (h: number, ls: string) => void }) {
+  const [h, setH] = useState(height);
+  const [ls, setLs] = useState(lineStyle);
+  const barRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+
+  function updateFromX(clientX: number) {
+    if (!barRef.current) return;
+    const rect = barRef.current.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const val = Math.round(ratio * 200);
+    setH(val);
+  }
+
+  function handlePointerDown(e: React.PointerEvent) {
+    dragging.current = true;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    updateFromX(e.clientX);
+  }
+  function handlePointerMove(e: React.PointerEvent) {
+    if (!dragging.current) return;
+    updateFromX(e.clientX);
+  }
+  function handlePointerUp(e: React.PointerEvent) {
+    if (!dragging.current) return;
+    dragging.current = false;
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    onChange(h, ls);
+  }
+
+  const lines = [
+    { key: "none", label: "선 없음", preview: <span className="text-base">✕</span> },
+    { key: "dotted", label: "점선", preview: <span className="border-t-2 border-dotted border-gray-400 w-10 block" /> },
+    { key: "solid", label: "실선", preview: <span className="border-t-2 border-gray-800 w-10 block" /> },
+    { key: "wave", label: "물결", preview: <span className="text-[10px] text-gray-500 tracking-tighter">∿∿∿∿∿</span> },
+    { key: "zigzag", label: "지그재그", preview: <span className="text-[10px] text-gray-500 tracking-tighter">⩘⩘⩘⩘⩘</span> },
+  ];
+
+  return (
+    <div className="px-5 pb-5 flex flex-col gap-4 border-t border-gray-50 pt-4">
+      <div>
+        <label className="text-xs font-medium text-gray-500 mb-2 block">구분선</label>
+        <div className="grid grid-cols-5 gap-2">
+          {lines.map((l) => (
+            <button key={l.key} onClick={() => { setLs(l.key); onChange(h, l.key); }}
+              className={`flex flex-col items-center gap-1.5 py-3 rounded-lg border-2 transition-all ${ls === l.key ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:border-gray-300"}`}>
+              <div className="h-5 flex items-center justify-center">{l.preview}</div>
+              <span className="text-[10px] text-gray-500">{l.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <label className="text-xs font-medium text-gray-500 mb-2 block">여백 조절</label>
+        <div className="flex items-center gap-3">
+          <div ref={barRef} className="flex-1 h-7 bg-gray-200 rounded-full relative cursor-pointer touch-none select-none"
+            onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp}>
+            <div className="absolute inset-y-0 left-0 bg-blue-500 rounded-full transition-[width]" style={{ width: `${(h / 200) * 100}%` }} />
+            <div className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-2 border-blue-500 rounded-full shadow-sm transition-[left]" style={{ left: `calc(${(h / 200) * 100}% - 10px)` }} />
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <input type="number" value={h} onChange={(e) => { const v = Math.max(0, Math.min(200, parseInt(e.target.value) || 0)); setH(v); onChange(v, ls); }}
+              className="w-14 px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-center focus:outline-none focus:ring-2 focus:ring-gray-900" />
+            <span className="text-xs text-gray-400">px</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Text Editor ---
+
+function TextEditor({ link, onUpdate }: { link: LinkRow; onUpdate: (id: string, updates: Partial<LinkRow>) => void }) {
+  const opts = (() => { try { return JSON.parse(link.thumbnail || "{}"); } catch { return {}; } })();
+  const [align, setAlign] = useState(opts.align || "center");
+  const [size, setSize] = useState(opts.size || "sm");
+  const [textLayout, setTextLayout] = useState(opts.textLayout || "plain");
+  const [showOptions, setShowOptions] = useState(false);
+
+  function saveOpts(a: string, s: string, tl: string) {
+    onUpdate(link.id, { thumbnail: JSON.stringify({ align: a, size: s, textLayout: tl }) });
+  }
+
+  return (
+    <div className="px-5 pb-5 flex flex-col gap-3 border-t border-gray-50 pt-4">
+      <div>
+        <label className="text-xs font-medium text-red-400 mb-1 block">대표문구 *</label>
+        <input type="text" defaultValue={link.label} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
+          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
+      </div>
+      <div>
+        <label className="text-xs font-medium text-red-400 mb-1 block">상세문구 *</label>
+        <textarea defaultValue={link.url} onBlur={(e) => onUpdate(link.id, { url: e.target.value })} rows={3}
+          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none" />
+      </div>
+      <button onClick={() => setShowOptions(!showOptions)} className="self-end text-xs text-gray-500 hover:text-gray-700 font-medium">
+        옵션 {showOptions ? "접기" : "펼치기"} {showOptions ? "∧" : "∨"}
+      </button>
+      {showOptions && (
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-2 block">레이아웃</label>
+            <div className="flex gap-3">
+              {[
+                { key: "plain", label: "기본 나열형", icon: <svg className="w-8 h-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M4 6h16M4 12h16M4 18h10" /></svg> },
+                { key: "toggle", label: "토글 접기형", icon: <svg className="w-8 h-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M7 8h10M7 12h6" /><path d="M16 11l2 2-2 2" /></svg> },
+              ].map((l) => (
+                <button key={l.key} onClick={() => { setTextLayout(l.key); saveOpts(align, size, l.key); }}
+                  className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-xl border-2 transition-all ${textLayout === l.key ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 hover:border-gray-300"}`}>
+                  <div className={textLayout === l.key ? "text-white [&_svg]:text-white" : ""}>{l.icon}</div>
+                  <span className="text-[10px] font-medium">{l.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-2 block">정렬</label>
+            <div className="flex gap-2">
+              {[
+                { key: "left", icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M4 6h16M4 12h10M4 18h14" /></svg> },
+                { key: "center", icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M4 6h16M7 12h10M5 18h14" /></svg> },
+                { key: "right", icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M4 6h16M10 12h10M6 18h14" /></svg> },
+              ].map((a) => (
+                <button key={a.key} onClick={() => { setAlign(a.key); saveOpts(a.key, size, textLayout); }}
+                  className={`flex-1 py-2.5 rounded-lg border-2 flex items-center justify-center transition-all ${align === a.key ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}>
+                  {a.icon}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-2 block">글자 크기</label>
+            <div className="flex gap-2">
+              {[{ key: "sm", label: "소" }, { key: "md", label: "중" }, { key: "lg", label: "대" }].map((s) => (
+                <button key={s.key} onClick={() => { setSize(s.key); saveOpts(align, s.key, textLayout); }}
+                  className={`flex-1 py-2.5 rounded-lg text-xs font-bold border-2 transition-all ${size === s.key ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // --- Block Add Modal ---
 
 function BlockAddModal({ onClose, onSelect }: { onClose: () => void; onSelect: (type: string) => void }) {
@@ -219,10 +369,22 @@ function SortableLinkBlock({
               <span className="w-5 h-5 rounded bg-[#FFE812] flex items-center justify-center text-[10px] font-bold text-[#3C1E1E] shrink-0">K</span>
               <span className={`text-sm font-semibold truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>카톡 채팅</span>
             </>
+          ) : link.layout === "spacer" ? (
+            <>
+              <span className="w-5 h-5 rounded bg-purple-100 flex items-center justify-center text-[10px] font-bold text-purple-600 shrink-0">—</span>
+              <span className={`text-sm font-semibold truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>여백</span>
+              <span className={`text-xs ${link.enabled ? "text-gray-400" : "text-gray-300"}`}>{link.label}px</span>
+            </>
+          ) : link.layout === "text" ? (
+            <>
+              <span className="w-5 h-5 rounded bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600 shrink-0">T</span>
+              <span className={`text-sm font-semibold truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>텍스트</span>
+              <span className={`text-sm truncate ${link.enabled ? "text-gray-500" : "text-gray-300"}`}>{link.label}</span>
+            </>
           ) : (
             <span className={`text-sm font-semibold truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>단일 링크</span>
           )}
-          <span className={`text-sm truncate ${link.enabled ? "text-gray-500" : "text-gray-300"}`}>{link.label}</span>
+          {link.layout !== "spacer" && link.layout !== "text" && <span className={`text-sm truncate ${link.enabled ? "text-gray-500" : "text-gray-300"}`}>{link.label}</span>}
         </button>
 
         {/* Right actions */}
@@ -233,7 +395,12 @@ function SortableLinkBlock({
       </div>
 
       {/* Expanded Content */}
-      {isOpen && (
+      {isOpen && link.layout === "spacer" ? (
+        <SpacerEditor height={parseInt(link.label) || 40} lineStyle={link.url || "none"}
+          onChange={(h, ls) => onUpdate(link.id, { label: String(h), url: ls })} />
+      ) : isOpen && link.layout === "text" ? (
+        <TextEditor link={link} onUpdate={onUpdate} />
+      ) : isOpen && (
         <div className="px-5 pb-5 flex flex-col gap-3 border-t border-gray-50 pt-4">
           <div>
             <label className="text-xs font-medium text-red-400 mb-1 block">연결 URL *</label>
@@ -411,6 +578,24 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     refreshPreview();
   }
 
+  async function addText() {
+    await fetch(`/api/pages/${slug}/links`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: "텍스트 제목", url: "상세 내용을 입력하세요", sort_order: links.length, layout: "text", enabled: true, thumbnail: JSON.stringify({ align: "center", size: "sm", textLayout: "plain" }) }),
+    });
+    await fetchAll();
+    refreshPreview();
+  }
+
+  async function addSpacer() {
+    await fetch(`/api/pages/${slug}/links`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: "40", url: "", sort_order: links.length, layout: "spacer", enabled: true }),
+    });
+    await fetchAll();
+    refreshPreview();
+  }
+
   function handleBlockSelect(type: string) {
     setShowBlockModal(false);
     if (type === "link") {
@@ -420,6 +605,10 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     } else if (type === "sns") {
       addSocial();
       setOpenSns(true);
+    } else if (type === "spacer") {
+      addSpacer();
+    } else if (type === "text") {
+      addText();
     } else {
       setToast("준비 중인 기능입니다");
     }

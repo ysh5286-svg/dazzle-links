@@ -158,16 +158,63 @@ export default async function SlugPage({
         {/* Link Cards */}
         {links.length > 0 && (
           <div className="w-full flex flex-col gap-3">
-            {links.map((link) => (
-              <LinkButton
-                key={link.id}
-                label={link.label}
-                url={link.url}
-                thumbnail={link.thumbnail}
-                layout={link.layout}
-                btnClassName="link-btn"
-              />
-            ))}
+            {links.map((link) => {
+              if (link.layout === "spacer") {
+                const h = parseInt(link.label) || 40;
+                const ls = link.url || "none";
+                return (
+                  <div key={link.id} className="w-full flex items-center justify-center" style={{ height: `${h}px` }}>
+                    {ls === "solid" && <div className="w-full border-t border-gray-200" />}
+                    {ls === "dotted" && <div className="w-full border-t border-dashed border-gray-300" />}
+                    {ls === "wave" && (
+                      <svg className="w-full h-3 text-gray-200" viewBox="0 0 400 12" preserveAspectRatio="none">
+                        <path d="M0,6 Q25,0 50,6 Q75,12 100,6 Q125,0 150,6 Q175,12 200,6 Q225,0 250,6 Q275,12 300,6 Q325,0 350,6 Q375,12 400,6" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                      </svg>
+                    )}
+                    {ls === "zigzag" && (
+                      <svg className="w-full h-3 text-gray-200" viewBox="0 0 400 12" preserveAspectRatio="none">
+                        <path d="M0,6 L20,0 L40,12 L60,0 L80,12 L100,0 L120,12 L140,0 L160,12 L180,0 L200,12 L220,0 L240,12 L260,0 L280,12 L300,0 L320,12 L340,0 L360,12 L380,0 L400,12" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                      </svg>
+                    )}
+                  </div>
+                );
+              }
+              if (link.layout === "text") {
+                const opts = (() => { try { return JSON.parse(link.thumbnail || "{}"); } catch { return {}; } })();
+                const align = opts.align || "center";
+                const size = opts.size || "sm";
+                const textLayout = opts.textLayout || "plain";
+                const sizeClass = size === "lg" ? "text-lg" : size === "md" ? "text-base" : "text-sm";
+                const alignClass = align === "left" ? "text-left" : align === "right" ? "text-right" : "text-center";
+                if (textLayout === "toggle") {
+                  return (
+                    <details key={link.id} className={`w-full ${alignClass}`}>
+                      <summary className={`${sizeClass} font-semibold text-gray-800 cursor-pointer list-none flex items-center gap-2 ${align === "center" ? "justify-center" : align === "right" ? "justify-end" : ""}`}>
+                        {link.label}
+                        <svg className="w-4 h-4 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </summary>
+                      <p className={`${size === "lg" ? "text-base" : size === "md" ? "text-sm" : "text-xs"} text-gray-500 mt-2 leading-relaxed whitespace-pre-wrap`}>{link.url}</p>
+                    </details>
+                  );
+                }
+                return (
+                  <div key={link.id} className={`w-full ${alignClass}`}>
+                    <p className={`${sizeClass} font-semibold text-gray-800`}>{link.label}</p>
+                    {link.url && <p className={`${size === "lg" ? "text-base" : size === "md" ? "text-sm" : "text-xs"} text-gray-500 mt-1 leading-relaxed whitespace-pre-wrap`}>{link.url}</p>}
+                  </div>
+                );
+              }
+              return (
+                <LinkButton
+                  key={link.id}
+                  label={link.label}
+                  url={link.url}
+                  thumbnail={link.thumbnail}
+                  layout={link.layout}
+                  btnClassName="link-btn"
+                />
+              );
+            })}
           </div>
         )}
 
