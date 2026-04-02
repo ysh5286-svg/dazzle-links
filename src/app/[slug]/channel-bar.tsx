@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 type Channel = {
   slug: string;
@@ -89,9 +90,11 @@ export default function ChannelBar({ currentSlug }: { currentSlug: string }) {
                 }`}
               >
                 {ch.profile ? (
-                  <img
+                  <Image
                     src={ch.profile}
                     alt={ch.title}
+                    width={60}
+                    height={60}
                     className="w-full h-full object-cover"
                   />
                 ) : (
