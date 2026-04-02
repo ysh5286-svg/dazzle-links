@@ -93,36 +93,24 @@ export default async function SlugPage({
         .link-btn::before {
           content: '';
           position: absolute;
-          inset: 0;
           z-index: -1;
-          transition: transform 0.4s ease, opacity 0.4s ease;
+          transition: transform 0.5s ease, opacity 0.3s ease;
           opacity: 0;
           background: ${hoverColor};
-          ${btnAction === "fill" ? "border-radius: 50%; transform: scale(0);" : ""}
-          ${btnAction === "wave" ? "transform: translateY(100%);" : ""}
-          ${btnAction === "shadow" ? "box-shadow: 0 8px 30px " + hoverColor + "50;" : ""}
+          ${btnAction === "fill" ? "width: 300px; height: 300px; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); border-radius: 50%;" : ""}
+          ${btnAction === "wave" ? "inset: 0; transform: translateY(100%); border-radius: 50% 50% 0 0;" : ""}
+          ${btnAction === "shadow" || btnAction === "none" ? "display: none;" : ""}
         }
         .link-btn:hover::before {
           opacity: 1;
-          ${btnAction === "fill" ? "transform: scale(2.5); border-radius: 0;" : ""}
-          ${btnAction === "wave" ? "transform: translateY(0);" : ""}
+          ${btnAction === "fill" ? "transform: translate(-50%, -50%) scale(3);" : ""}
+          ${btnAction === "wave" ? "transform: translateY(0); border-radius: 0;" : ""}
         }
         .link-btn:hover {
           transform: scale(1.02);
           ${btnAction === "shadow" ? `box-shadow: 0 8px 30px ${hoverColor}50;` : ""}
         }
         .link-btn:active { transform: scale(0.98); }
-        ${btnAction === "wave" ? `
-        .link-btn::before {
-          background: ${hoverColor};
-          border-radius: 50% 50% 0 0;
-          transform: translateY(100%);
-          transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-        }
-        .link-btn:hover::before {
-          border-radius: 0;
-          transform: translateY(0);
-        }` : ""}
       `}</style>
       <main className="w-full max-w-[480px] mx-auto px-5 pt-12 pb-10 flex flex-col items-center gap-8">
         {/* Profile */}
