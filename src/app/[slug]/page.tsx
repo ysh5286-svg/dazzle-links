@@ -149,9 +149,17 @@ export default async function SlugPage({
         {/* Profile */}
         <div className="flex flex-col items-center gap-3">
           {page.profile && (
-            <div className="w-[100px] h-[100px] rounded-full overflow-hidden shadow-sm">
-              <Image src={page.profile} alt={page.title} width={100} height={100} className="w-full h-full object-cover" />
-            </div>
+            page.profile_ring ? (
+              <div className="w-[108px] h-[108px] rounded-full p-[3px]" style={{ background: "conic-gradient(#f58529, #dd2a7b, #8134af, #515bd4, #3b82f6, #58c322, #f58529)" }}>
+                <div className="w-full h-full rounded-full overflow-hidden border-[3px] border-white">
+                  <Image src={page.profile} alt={page.title} width={100} height={100} className="w-full h-full object-cover" />
+                </div>
+              </div>
+            ) : (
+              <div className="w-[100px] h-[100px] rounded-full overflow-hidden shadow-sm">
+                <Image src={page.profile} alt={page.title} width={100} height={100} className="w-full h-full object-cover" />
+              </div>
+            )
           )}
           <h1 className="text-lg font-bold text-gray-900 flex items-center gap-1 justify-center">
             {page.title}
