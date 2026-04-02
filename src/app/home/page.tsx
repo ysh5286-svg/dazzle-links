@@ -8,6 +8,11 @@ export const revalidate = 60;
 export const metadata: Metadata = {
   title: "다즐피플 전체 채널 | Dazzle Links",
   description: "다즐피플이 운영하는 모든 채널을 한눈에 확인하세요.",
+  openGraph: {
+    title: "다즐피플 전체 채널",
+    description: "다즐피플이 운영하는 모든 채널을 한눈에 확인하세요.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
 };
 
 export default async function ChannelsPage() {
