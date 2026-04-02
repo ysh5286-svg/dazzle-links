@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { supabase } from "@/lib/supabase";
 import LinkButton from "./link-button";
 import SocialIcons from "./social-icons";
+import DesignPreviewListener from "./design-preview";
 
 export const revalidate = 60;
 
@@ -90,6 +91,7 @@ export default async function SlugPage({
 
   return (
     <>
+      <DesignPreviewListener />
       <style>{`
         body { background: ${bgColor}; font-family: ${fontFamily}; }
         .link-btn {

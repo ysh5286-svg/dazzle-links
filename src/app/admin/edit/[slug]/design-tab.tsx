@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { PageRow } from "@/lib/supabase";
 
 const BG_COLORS = ["#f9fafb", "#e8f5e9", "#e3f2fd", "#fce4ec", "#fff8e1", "#f3e5f5", "#e0f7fa", "#ffffff"];
@@ -39,6 +39,21 @@ export default function DesignTab({
   const [btnAction, setBtnAction] = useState(page.btn_action || "fill");
   const [font, setFont] = useState(page.font || "pretendard");
   const [saving, setSaving] = useState(false);
+
+  // 실시간 미리보기: 값 바뀔 때마다 iframe에 postMessage
+  const sendPreview = useCallback(() => {
+    const iframe = document.querySelector('iframe[title="미리보기"]') as HTMLIFrameElement;
+    if (iframe?.contentWindow) {
+      iframe.contentWindow.postMessage({
+        type: "dazzle-design-preview",
+        design: { bg_color: bgColor, hover_color: hoverColor, btn_color: btnColor, btn_shape: btnShape, btn_action: btnAction, font },
+      }, "*");
+    }
+  }, [bgColor, hoverColor, btnColor, btnShape, btnAction, font]);
+
+  useEffect(() => {
+    sendPreview();
+  }, [sendPreview]);
 
   async function handleSave() {
     setSaving(true);
