@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 
+function isMobile() {
+  if (typeof window === "undefined") return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || ("ontouchstart" in window && window.innerWidth < 1024);
+}
+
 export default function ShareButton() {
   const [copied, setCopied] = useState(false);
 
@@ -9,24 +14,31 @@ export default function ShareButton() {
     const url = window.location.href;
     const title = document.title;
 
-    // Mobile: native share sheet (카카오톡 등 선택 가능)
-    if (navigator.share) {
+    if (isMobile() && navigator.share) {
+      // 모바일: 네이티브 공유 시트 (카카오톡, 메시지 등)
       try {
-        await navigator.share({ title, url });
-        return;
+        await navigator.share({ title, text: title, url });
       } catch {
-        // cancelled
+        // 사용자 취소
       }
       return;
     }
 
-    // Desktop: 바로 클립보드 복사
+    // 데스크탑: 바로 클립보드 복사
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // ignore
+      // fallback
+      const input = document.createElement("input");
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   }
 
@@ -44,7 +56,7 @@ export default function ShareButton() {
         </svg>
       </button>
       {copied && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-5 py-2.5 rounded-full shadow-lg z-50 animate-pulse">
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-5 py-2.5 rounded-full shadow-lg z-50">
           링크가 복사되었습니다
         </div>
       )}
