@@ -18,17 +18,18 @@ export default async function ChannelsPage() {
 
   const channels = pages || [];
 
-  // 카테고리별 그룹핑 (순서 유지)
-  const categoryOrder: string[] = [];
+  // 카테고리별 그룹핑 (고정 순서 + 나머지)
+  const CATEGORY_ORDER = ["자사 채널", "협업 인플루언서", "파트너"];
   const grouped: Record<string, typeof channels> = {};
   for (const ch of channels) {
     const cat = ch.category || "자사 채널";
-    if (!grouped[cat]) {
-      grouped[cat] = [];
-      categoryOrder.push(cat);
-    }
+    if (!grouped[cat]) grouped[cat] = [];
     grouped[cat].push(ch);
   }
+  const categoryOrder = [
+    ...CATEGORY_ORDER.filter((c) => grouped[c]?.length),
+    ...Object.keys(grouped).filter((c) => !CATEGORY_ORDER.includes(c)),
+  ];
 
   return (
     <div className="min-h-screen bg-[#f9fafb]" style={{ fontFamily: "'Pretendard', -apple-system, sans-serif" }}>
