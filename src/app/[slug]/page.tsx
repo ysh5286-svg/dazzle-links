@@ -61,7 +61,7 @@ export default async function SlugPage({
       .order("sort_order"),
   ]);
 
-  const links = linksRes.data || [];
+  const links = (linksRes.data || []).filter((l: { enabled?: boolean }) => l.enabled !== false);
   const socials = socialsRes.data || [];
 
   return (
@@ -98,8 +98,8 @@ export default async function SlugPage({
               key={link.id}
               label={link.label}
               url={link.url}
-              icon="Link"
               thumbnail={link.thumbnail}
+              layout={link.layout}
             />
           ))}
         </div>

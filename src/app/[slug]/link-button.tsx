@@ -1,53 +1,68 @@
 "use client";
 
 import Image from "next/image";
-import * as LucideIcons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-
-function getIcon(name: string): LucideIcon {
-  const icons = LucideIcons as unknown as Record<string, LucideIcon>;
-  return icons[name] || LucideIcons.Link;
-}
+import { Link as LinkIcon } from "lucide-react";
 
 export default function LinkButton({
   label,
   url,
-  icon,
   thumbnail,
+  layout = "small",
 }: {
   label: string;
   url: string;
-  icon: string;
-  thumbnail?: string;
+  icon?: string;
+  thumbnail?: string | null;
+  layout?: string;
 }) {
-  const Icon = getIcon(icon);
-
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex items-center gap-4 w-full px-4 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md active:scale-[0.98] transition-all duration-150 cursor-pointer"
-    >
-      {/* Thumbnail or Icon */}
-      <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center bg-gray-50">
-        {thumbnail ? (
-          <Image
-            src={thumbnail}
-            alt={label}
-            width={56}
-            height={56}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <Icon className="w-6 h-6 text-gray-500" />
+  if (layout === "large") {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer"
+        className="group w-full bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md active:scale-[0.98] transition-all duration-150 cursor-pointer overflow-hidden">
+        {thumbnail && (
+          <div className="w-full h-40 overflow-hidden">
+            <Image src={thumbnail} alt={label} width={480} height={160} className="w-full h-full object-cover" />
+          </div>
         )}
-      </div>
+        <div className="px-4 py-3">
+          <span className="text-[15px] font-medium text-gray-800">{label}</span>
+        </div>
+      </a>
+    );
+  }
 
-      {/* Label */}
-      <span className="flex-1 text-[15px] font-medium text-gray-800 leading-snug">
-        {label}
-      </span>
+  if (layout === "medium") {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer"
+        className="group flex items-center gap-4 w-full px-4 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md active:scale-[0.98] transition-all duration-150 cursor-pointer">
+        {thumbnail ? (
+          <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
+            <Image src={thumbnail} alt={label} width={80} height={80} className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <div className="w-20 h-20 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
+            <LinkIcon className="w-7 h-7 text-gray-400" />
+          </div>
+        )}
+        <span className="flex-1 text-[15px] font-medium text-gray-800 leading-snug">{label}</span>
+      </a>
+    );
+  }
+
+  // small (default)
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer"
+      className="group flex items-center gap-4 w-full px-4 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md active:scale-[0.98] transition-all duration-150 cursor-pointer">
+      {thumbnail ? (
+        <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
+          <Image src={thumbnail} alt={label} width={56} height={56} className="w-full h-full object-cover" />
+        </div>
+      ) : (
+        <div className="w-14 h-14 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
+          <LinkIcon className="w-6 h-6 text-gray-400" />
+        </div>
+      )}
+      <span className="flex-1 text-[15px] font-medium text-gray-800 leading-snug">{label}</span>
     </a>
   );
 }

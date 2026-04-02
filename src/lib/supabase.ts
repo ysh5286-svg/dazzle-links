@@ -24,6 +24,8 @@ export type LinkRow = {
   url: string;
   thumbnail: string | null;
   sort_order: number;
+  layout: string;
+  enabled: boolean;
 };
 
 export type SocialRow = {
