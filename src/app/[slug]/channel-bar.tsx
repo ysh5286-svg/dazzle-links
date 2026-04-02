@@ -61,9 +61,12 @@ export default function ChannelBar({ currentSlug }: { currentSlug: string }) {
     fetch("/api/pages")
       .then((r) => r.json())
       .then((pages: Channel[]) => {
-        const filtered = pages;
-        cachedChannels = filtered;
-        setChannels(filtered);
+        if (!Array.isArray(pages)) {
+          setReady(true);
+          return;
+        }
+        cachedChannels = pages;
+        setChannels(pages);
         setReady(true);
       })
       .catch(() => setReady(true));

@@ -12,8 +12,8 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Protect API routes (except /api/auth)
-  if (pathname.startsWith("/api/pages")) {
+  // Protect API routes (except /api/auth) — only for write operations
+  if (pathname.startsWith("/api/pages") && request.method !== "GET") {
     const isAuthenticated = verifySessionFromRequest(request);
     if (!isAuthenticated) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
