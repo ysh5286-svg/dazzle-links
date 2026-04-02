@@ -85,16 +85,44 @@ export default async function SlugPage({
         .link-btn {
           background: ${btnColor};
           border-radius: ${btnShape};
-          transition: all 0.15s ease;
+          transition: transform 0.2s ease;
+          position: relative;
+          overflow: hidden;
+          z-index: 0;
+        }
+        .link-btn::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          z-index: -1;
+          transition: transform 0.4s ease, opacity 0.4s ease;
+          opacity: 0;
+          background: ${hoverColor};
+          ${btnAction === "fill" ? "border-radius: 50%; transform: scale(0);" : ""}
+          ${btnAction === "wave" ? "transform: translateY(100%);" : ""}
+          ${btnAction === "shadow" ? "box-shadow: 0 8px 30px " + hoverColor + "50;" : ""}
+        }
+        .link-btn:hover::before {
+          opacity: 1;
+          ${btnAction === "fill" ? "transform: scale(2.5); border-radius: 0;" : ""}
+          ${btnAction === "wave" ? "transform: translateY(0);" : ""}
         }
         .link-btn:hover {
-          ${btnAction === "fill" ? `background: ${hoverColor};` : ""}
-          ${btnAction === "scale" ? "transform: scale(1.03);" : ""}
-          ${btnAction === "shadow" ? `box-shadow: 0 8px 25px ${hoverColor}40;` : ""}
-          ${btnAction === "wave" ? `background: linear-gradient(90deg, ${btnColor}, ${hoverColor}, ${btnColor}); background-size: 200%; animation: wave 1s ease infinite;` : ""}
+          transform: scale(1.02);
+          ${btnAction === "shadow" ? `box-shadow: 0 8px 30px ${hoverColor}50;` : ""}
         }
         .link-btn:active { transform: scale(0.98); }
-        ${btnAction === "wave" ? "@keyframes wave { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }" : ""}
+        ${btnAction === "wave" ? `
+        .link-btn::before {
+          background: ${hoverColor};
+          border-radius: 50% 50% 0 0;
+          transform: translateY(100%);
+          transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+        }
+        .link-btn:hover::before {
+          border-radius: 0;
+          transform: translateY(0);
+        }` : ""}
       `}</style>
       <main className="w-full max-w-[480px] mx-auto px-5 pt-12 pb-10 flex flex-col items-center gap-8">
         {/* Profile */}

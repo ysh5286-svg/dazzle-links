@@ -11,9 +11,8 @@ const BTN_SHAPES = [
   { key: "square", label: "직각" },
 ];
 const BTN_ACTIONS = [
-  { key: "fill", label: "채우기", icon: "●" },
+  { key: "fill", label: "원형 채움", icon: "◎" },
   { key: "wave", label: "물결", icon: "≈" },
-  { key: "scale", label: "확대", icon: "◇" },
   { key: "shadow", label: "그림자", icon: "□" },
   { key: "none", label: "없음", icon: "✕" },
 ];
