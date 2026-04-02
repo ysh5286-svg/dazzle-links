@@ -78,6 +78,16 @@ export default async function SlugPage({
   const btnAction = page.btn_action || "fill";
   const fontFamily = FONT_MAP[page.font] || FONT_MAP.pretendard;
 
+  // 호버 색상이 어두우면 글자를 흰색으로
+  function isDark(hex: string) {
+    const c = hex.replace("#", "");
+    const r = parseInt(c.substring(0, 2), 16);
+    const g = parseInt(c.substring(2, 4), 16);
+    const b = parseInt(c.substring(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 < 128;
+  }
+  const hoverTextColor = isDark(hoverColor) ? "#ffffff" : "#1f2937";
+
   return (
     <>
       <style>{`
@@ -108,8 +118,10 @@ export default async function SlugPage({
         }
         .link-btn:hover {
           transform: scale(1.02);
-          ${btnAction === "shadow" ? `box-shadow: 0 8px 30px ${hoverColor}50;` : ""}
+          color: ${hoverTextColor};
+          ${btnAction === "shadow" ? `box-shadow: 0 8px 30px ${hoverColor}50; background: ${hoverColor};` : ""}
         }
+        .link-btn:hover * { color: ${hoverTextColor}; }
         .link-btn:active { transform: scale(0.98); }
       `}</style>
       <main className="w-full max-w-[480px] mx-auto px-5 pt-12 pb-10 flex flex-col items-center gap-8">
