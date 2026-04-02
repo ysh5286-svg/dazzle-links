@@ -118,7 +118,7 @@ export default function ChannelBar({ currentSlug }: { currentSlug: string }) {
       >
         {/* 전체 채널 보기 */}
         <button
-          onClick={() => router.push("/channels")}
+          onClick={() => router.push("/home")}
           className="flex flex-col items-center gap-1.5 shrink-0"
         >
           <div className="w-[60px] h-[60px] rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-200">
