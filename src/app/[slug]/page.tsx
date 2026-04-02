@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase";
 import LinkButton from "./link-button";
 import SocialIcons from "./social-icons";
 import DesignPreviewListener from "./design-preview";
+import ChannelBar from "./channel-bar";
+import ChatButton from "./chat-button";
 
 export const revalidate = 60;
 
@@ -126,7 +128,13 @@ export default async function SlugPage({
         .link-btn:hover * { color: ${hoverTextColor}; }
         .link-btn:active { transform: scale(0.98); }
       `}</style>
-      <main className="w-full max-w-[480px] mx-auto px-5 pt-12 pb-10 flex flex-col items-center gap-8">
+      {/* Channel Bar */}
+      <ChannelBar currentSlug={slug} />
+
+      {/* KakaoTalk Chat Button */}
+      <ChatButton url={socials.find((s: { platform: string }) => s.platform === "kakaotalk")?.url} />
+
+      <main className="w-full max-w-[480px] mx-auto px-5 pt-4 pb-10 flex flex-col items-center gap-8">
         {/* Profile */}
         <div className="flex flex-col items-center gap-3">
           {page.profile && (
