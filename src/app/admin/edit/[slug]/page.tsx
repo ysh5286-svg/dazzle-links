@@ -112,6 +112,7 @@ function LayoutSelector({ value, onChange }: { value: string; onChange: (v: stri
 function BlockAddModal({ onClose, onSelect }: { onClose: () => void; onSelect: (type: string) => void }) {
   const blocks = [
     { type: "link", label: "단일 링크", desc: "하나의 URL 강조", color: "bg-orange-100 text-orange-600", icon: "L" },
+    { type: "sns", label: "SNS 연결", desc: "소셜 채널 연결", color: "bg-green-100 text-green-600", icon: "S" },
     { type: "spacer", label: "여백", desc: "블럭 간격 조절", color: "bg-purple-100 text-purple-600", icon: "—" },
     { type: "text", label: "텍스트", desc: "글 작성", color: "bg-blue-100 text-blue-600", icon: "T" },
   ];
@@ -183,18 +184,15 @@ function SortableLinkBlock({
           <DragHandle />
         </div>
 
-        {/* Toggle */}
-        <div className="ml-2 mr-3">
+        {/* ON/OFF Toggle */}
+        <div className="ml-1.5 mr-2">
           <Toggle enabled={link.enabled} onChange={(v) => onToggleEnabled(link.id, v)} />
         </div>
 
         {/* Title - clickable to expand */}
         <button onClick={onToggleOpen} className="flex-1 flex items-center gap-2 text-left min-w-0">
-          <span className="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center text-orange-600 text-[10px] font-bold shrink-0">L</span>
-          <div className="min-w-0">
-            <span className="text-[10px] text-gray-400">단일 링크</span>
-            <p className={`text-sm font-medium truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>{link.label}</p>
-          </div>
+          <span className={`text-sm font-semibold truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>단일 링크</span>
+          <span className={`text-sm truncate ${link.enabled ? "text-gray-500" : "text-gray-300"}`}>{link.label}</span>
         </button>
 
         {/* Right actions */}
@@ -338,6 +336,9 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     setShowBlockModal(false);
     if (type === "link") {
       addLink();
+    } else if (type === "sns") {
+      addSocial();
+      setOpenSns(true);
     } else {
       setToast("준비 중인 기능입니다");
     }
