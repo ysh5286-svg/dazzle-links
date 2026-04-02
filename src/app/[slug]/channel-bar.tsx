@@ -1,8 +1,41 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+
+function useDragScroll(ref: React.RefObject<HTMLDivElement | null>) {
+  const isDown = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!ref.current) return;
+    isDown.current = true;
+    startX.current = e.pageX - ref.current.offsetLeft;
+    scrollLeft.current = ref.current.scrollLeft;
+    ref.current.style.cursor = "grabbing";
+  }, [ref]);
+
+  const onMouseLeave = useCallback(() => {
+    isDown.current = false;
+    if (ref.current) ref.current.style.cursor = "grab";
+  }, [ref]);
+
+  const onMouseUp = useCallback(() => {
+    isDown.current = false;
+    if (ref.current) ref.current.style.cursor = "grab";
+  }, [ref]);
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDown.current || !ref.current) return;
+    e.preventDefault();
+    const x = e.pageX - ref.current.offsetLeft;
+    ref.current.scrollLeft = scrollLeft.current - (x - startX.current);
+  }, [ref]);
+
+  return { onMouseDown, onMouseLeave, onMouseUp, onMouseMove };
+}
 
 type Channel = {
   slug: string;
@@ -46,6 +79,8 @@ export default function ChannelBar({ currentSlug }: { currentSlug: string }) {
     }
   }, [channels, currentSlug]);
 
+  const dragHandlers = useDragScroll(scrollRef);
+
   if (channels.length <= 1) return <div className="h-[88px]" />;
 
   return (
@@ -56,8 +91,9 @@ export default function ChannelBar({ currentSlug }: { currentSlug: string }) {
     >
       <div
         ref={scrollRef}
-        className="flex items-center gap-4 overflow-x-auto"
+        className="flex items-center gap-4 overflow-x-auto cursor-grab"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
+        {...dragHandlers}
       >
         {/* 전체 채널 보기 */}
         <button
