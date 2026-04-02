@@ -147,7 +147,14 @@ export default async function SlugPage({
               <Image src={page.profile} alt={page.title} width={100} height={100} className="w-full h-full object-cover" />
             </div>
           )}
-          <h1 className="text-lg font-bold text-gray-900">{page.title}</h1>
+          <h1 className="text-lg font-bold text-gray-900 flex items-center gap-1 justify-center">
+            {page.title}
+            {page.badge_color && (
+              <svg className="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill={page.badge_color}>
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 14.5l-4-4 1.4-1.4 2.6 2.6 5.6-5.6 1.4 1.4-7 7z"/>
+              </svg>
+            )}
+          </h1>
           {page.desc && (
             <p className="text-sm text-gray-500 text-center leading-relaxed">{page.desc}</p>
           )}

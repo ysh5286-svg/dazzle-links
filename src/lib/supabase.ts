@@ -23,6 +23,7 @@ export type PageRow = {
   font: string;
   category: string;
   sort_order: number;
+  badge_color: string | null;
 };
 
 export type LinkRow = {

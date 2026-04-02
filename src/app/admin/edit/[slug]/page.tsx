@@ -538,6 +538,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   const [profile, setProfile] = useState("");
   const [newSlug, setNewSlug] = useState("");
   const [category, setCategory] = useState("자사 채널");
+  const [badgeColor, setBadgeColor] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -560,6 +561,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     setProfile(data.page.profile || "");
     setNewSlug(data.page.slug);
     setCategory(data.page.category || "자사 채널");
+    setBadgeColor(data.page.badge_color || null);
     setLoading(false);
   }, [slug, router]);
 
@@ -576,7 +578,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   async function savePageInfo() {
     setSaving(true);
     const cleanSlug = newSlug.toLowerCase().replace(/[^a-z0-9_.-]/g, "");
-    const updates: Record<string, string> = { title, desc, profile, category };
+    const updates: Record<string, string | null> = { title, desc, profile, category, badge_color: badgeColor };
     if (cleanSlug && cleanSlug !== slug) {
       updates.slug = cleanSlug;
     }
@@ -831,6 +833,29 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">상세문구</label><input type="text" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="추가 설명" className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div>
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">이미지 URL</label><input type="text" value={profile} onChange={(e) => setProfile(e.target.value)} placeholder="https://..." className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div>
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">페이지 주소 (슬러그)</label><div className="flex items-center gap-1"><span className="text-xs text-gray-400 shrink-0">link.dazzlepeople.com/</span><input type="text" value={newSlug} onChange={(e) => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ""))} className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div></div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 mb-1 block">검증 마크</label>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button type="button" onClick={() => setBadgeColor(null)}
+                        className={`px-4 py-2 rounded-lg text-xs font-medium border-2 transition-all ${!badgeColor ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"}`}>
+                        없음
+                      </button>
+                      {[
+                        { color: "#3B82F6", label: "파랑" },
+                        { color: "#EF4444", label: "빨강" },
+                        { color: "#F59E0B", label: "노랑" },
+                        { color: "#10B981", label: "초록" },
+                        { color: "#8B5CF6", label: "보라" },
+                        { color: "#EC4899", label: "핑크" },
+                      ].map((b) => (
+                        <button key={b.color} type="button" onClick={() => setBadgeColor(b.color)}
+                          className={`px-3 py-2 rounded-lg text-xs font-medium border-2 transition-all flex items-center gap-1.5 ${badgeColor === b.color ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:border-gray-400"}`}>
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill={b.color}><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 14.5l-4-4 1.4-1.4 2.6 2.6 5.6-5.6 1.4 1.4-7 7z"/></svg>
+                          {b.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <div>
                     <label className="text-xs font-medium text-gray-500 mb-1 block">카테고리</label>
                     <div className="flex gap-2 flex-wrap">
