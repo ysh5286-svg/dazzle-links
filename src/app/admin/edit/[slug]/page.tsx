@@ -277,7 +277,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
 
   async function savePageInfo() {
     setSaving(true);
-    const cleanSlug = newSlug.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    const cleanSlug = newSlug.toLowerCase().replace(/[^a-z0-9_.-]/g, "");
     const updates: Record<string, string> = { title, desc, profile };
     if (cleanSlug && cleanSlug !== slug) {
       updates.slug = cleanSlug;
@@ -423,7 +423,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">대표문구</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div>
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">상세문구</label><input type="text" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="추가 설명" className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div>
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">이미지 URL</label><input type="text" value={profile} onChange={(e) => setProfile(e.target.value)} placeholder="https://..." className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div>
-                  <div><label className="text-xs font-medium text-gray-500 mb-1 block">페이지 주소 (슬러그)</label><div className="flex items-center gap-1"><span className="text-xs text-gray-400 shrink-0">link.dazzlepeople.com/</span><input type="text" value={newSlug} onChange={(e) => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div></div>
+                  <div><label className="text-xs font-medium text-gray-500 mb-1 block">페이지 주소 (슬러그)</label><div className="flex items-center gap-1"><span className="text-xs text-gray-400 shrink-0">link.dazzlepeople.com/</span><input type="text" value={newSlug} onChange={(e) => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ""))} className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div></div>
                   <button onClick={savePageInfo} disabled={saving} className="self-end px-6 py-2 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50">{saving ? "저장 중..." : "저장"}</button>
                 </div>
               )}
