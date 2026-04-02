@@ -133,10 +133,10 @@ export default async function SlugPage({
       <ChannelBar currentSlug={slug} />
 
       {/* KakaoTalk Chat Button - from kakaotalk block or socials */}
-      <ChatButton url={
-        allLinks.find((l: { layout?: string }) => l.layout === "kakaotalk")?.url
-        || socials.find((s: { platform: string }) => s.platform === "kakaotalk")?.url
-      } />
+      <ChatButton
+        url={allLinks.find((l: { layout?: string }) => l.layout === "kakaotalk")?.url || socials.find((s: { platform: string }) => s.platform === "kakaotalk")?.url}
+        label={allLinks.find((l: { layout?: string }) => l.layout === "kakaotalk")?.label}
+      />
 
       <main className="w-full max-w-[480px] mx-auto px-5 pt-4 pb-10 flex flex-col items-center gap-8">
         {/* Profile */}
