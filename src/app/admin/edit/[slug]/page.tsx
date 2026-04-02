@@ -591,36 +591,38 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     }
   }
 
+  function tempId() { return "temp_" + Math.random().toString(36).slice(2); }
+
   async function addLink() {
-    await fetch(`/api/pages/${slug}/links`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ label: "새 링크", url: "https://", sort_order: links.length, layout: "small", enabled: true }),
-    });
-    await fetchAll();
+    const temp: LinkRow = { id: tempId(), page_id: page!.id, label: "새 링크", url: "https://", sort_order: links.length, layout: "small", enabled: true, thumbnail: null };
+    setLinks((prev) => [...prev, temp]);
+    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label: temp.label, url: temp.url, sort_order: temp.sort_order, layout: temp.layout, enabled: true }) });
+    const created = await res.json();
+    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
     refreshPreview();
   }
 
   async function updateLink(id: string, updates: Partial<LinkRow>) {
     setLinks((prev) => prev.map((l) => l.id === id ? { ...l, ...updates } : l));
-    await fetch(`/api/pages/${slug}/links`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...updates }) });
-    refreshPreview();
+    fetch(`/api/pages/${slug}/links`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...updates }) })
+      .then(() => refreshPreview());
   }
 
   async function deleteLink(id: string) {
     setLinks((prev) => prev.filter((l) => l.id !== id));
-    await fetch(`/api/pages/${slug}/links`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
-    refreshPreview();
+    fetch(`/api/pages/${slug}/links`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) })
+      .then(() => refreshPreview());
   }
 
   async function copyLink(id: string) {
     const link = links.find((l) => l.id === id);
     if (!link) return;
-    await fetch(`/api/pages/${slug}/links`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ label: link.label, url: link.url, thumbnail: link.thumbnail, layout: link.layout, enabled: link.enabled, sort_order: links.length }),
-    });
-    await fetchAll();
+    const temp: LinkRow = { ...link, id: tempId(), sort_order: links.length };
+    setLinks((prev) => [...prev, temp]);
     setToast("블럭이 복사되었습니다");
+    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label: link.label, url: link.url, thumbnail: link.thumbnail, layout: link.layout, enabled: link.enabled, sort_order: links.length }) });
+    const created = await res.json();
+    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
     refreshPreview();
   }
 
@@ -649,17 +651,22 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   }
 
   async function addSocial() {
-    await fetch(`/api/pages/${slug}/socials`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ platform: "instagram", url: "https://", sort_order: socials.length }) });
-    await fetchAll(); refreshPreview();
+    const temp: SocialRow = { id: tempId(), page_id: page!.id, platform: "instagram", url: "https://", sort_order: socials.length };
+    setSocials((prev) => [...prev, temp]);
+    const res = await fetch(`/api/pages/${slug}/socials`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ platform: "instagram", url: "https://", sort_order: socials.length }) });
+    const created = await res.json();
+    if (created?.id) setSocials((prev) => prev.map((s) => s.id === temp.id ? { ...s, id: created.id } : s));
+    refreshPreview();
   }
   async function updateSocial(id: string, updates: Partial<SocialRow>) {
-    await fetch(`/api/pages/${slug}/socials`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...updates }) });
-    refreshPreview();
+    setSocials((prev) => prev.map((s) => s.id === id ? { ...s, ...updates } : s));
+    fetch(`/api/pages/${slug}/socials`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...updates }) })
+      .then(() => refreshPreview());
   }
   async function deleteSocial(id: string) {
     setSocials((prev) => prev.filter((s) => s.id !== id));
-    await fetch(`/api/pages/${slug}/socials`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
-    refreshPreview();
+    fetch(`/api/pages/${slug}/socials`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) })
+      .then(() => refreshPreview());
   }
   async function deletePage() {
     if (!confirm(`"${title}" 페이지를 삭제하시겠습니까?`)) return;
@@ -668,38 +675,42 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   }
 
   async function addKakaoBlock() {
-    await fetch(`/api/pages/${slug}/links`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ label: "카톡 문의/제보", url: "https://pf.kakao.com/", sort_order: links.length, layout: "kakaotalk", enabled: true }),
-    });
-    await fetchAll();
+    const data = { label: "카톡 문의/제보", url: "https://pf.kakao.com/", sort_order: links.length, layout: "kakaotalk", enabled: true };
+    const temp: LinkRow = { id: tempId(), page_id: page!.id, thumbnail: null, ...data };
+    setLinks((prev) => [...prev, temp]);
+    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    const created = await res.json();
+    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
     refreshPreview();
   }
 
   async function addVideo() {
-    await fetch(`/api/pages/${slug}/links`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ label: "grid", url: JSON.stringify([""]), sort_order: links.length, layout: "video", enabled: true }),
-    });
-    await fetchAll();
+    const data = { label: "grid", url: JSON.stringify([""]), sort_order: links.length, layout: "video", enabled: true };
+    const temp: LinkRow = { id: tempId(), page_id: page!.id, thumbnail: null, ...data };
+    setLinks((prev) => [...prev, temp]);
+    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    const created = await res.json();
+    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
     refreshPreview();
   }
 
   async function addText() {
-    await fetch(`/api/pages/${slug}/links`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ label: "텍스트 제목", url: "상세 내용을 입력하세요", sort_order: links.length, layout: "text", enabled: true, thumbnail: JSON.stringify({ align: "center", size: "sm", textLayout: "plain" }) }),
-    });
-    await fetchAll();
+    const data = { label: "텍스트 제목", url: "상세 내용을 입력하세요", sort_order: links.length, layout: "text", enabled: true, thumbnail: JSON.stringify({ align: "center", size: "sm", textLayout: "plain" }) };
+    const temp: LinkRow = { id: tempId(), page_id: page!.id, ...data };
+    setLinks((prev) => [...prev, temp]);
+    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    const created = await res.json();
+    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
     refreshPreview();
   }
 
   async function addSpacer() {
-    await fetch(`/api/pages/${slug}/links`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ label: "40", url: "", sort_order: links.length, layout: "spacer", enabled: true }),
-    });
-    await fetchAll();
+    const data = { label: "40", url: "", sort_order: links.length, layout: "spacer", enabled: true };
+    const temp: LinkRow = { id: tempId(), page_id: page!.id, thumbnail: null, ...data };
+    setLinks((prev) => [...prev, temp]);
+    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    const created = await res.json();
+    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
     refreshPreview();
   }
 

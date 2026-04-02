@@ -230,7 +230,7 @@ export default async function SlugPage({
                     <a href={url} target="_blank" rel="noopener noreferrer" className="relative block rounded-xl overflow-hidden group aspect-[9/16]">
                       <img src={`https://img.youtube.com/vi/${vid}/hqdefault.jpg`} alt="" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                        <svg className="w-12 h-12 text-red-500 drop-shadow-lg" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" /></svg>
+                        <svg className="w-14 h-14 drop-shadow-lg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="white" fillOpacity="0.9"/><path d="M20 16l12 8-12 8V16z" fill="#333"/></svg>
                       </div>
                     </a>
                   );
