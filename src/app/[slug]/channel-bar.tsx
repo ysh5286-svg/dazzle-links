@@ -9,19 +9,30 @@ type Channel = {
   profile: string;
 };
 
+// 모듈 레벨 캐시 - 페이지 이동해도 유지
+let cachedChannels: Channel[] | null = null;
+
 export default function ChannelBar({ currentSlug }: { currentSlug: string }) {
-  const [channels, setChannels] = useState<Channel[]>([]);
+  const [channels, setChannels] = useState<Channel[]>(cachedChannels || []);
+  const [ready, setReady] = useState(!!cachedChannels);
   const scrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
+    if (cachedChannels) {
+      setChannels(cachedChannels);
+      setReady(true);
+      return;
+    }
     fetch("/api/pages")
       .then((r) => r.json())
       .then((pages: Channel[]) => {
-        // dazzle-list (전체 채널 페이지) 제외
-        setChannels(pages.filter((p) => p.slug !== "dazzle-list"));
+        const filtered = pages.filter((p) => p.slug !== "dazzle-list");
+        cachedChannels = filtered;
+        setChannels(filtered);
+        setReady(true);
       })
-      .catch(() => {});
+      .catch(() => setReady(true));
   }, []);
 
   // 현재 채널로 자동 스크롤
@@ -34,14 +45,18 @@ export default function ChannelBar({ currentSlug }: { currentSlug: string }) {
     }
   }, [channels, currentSlug]);
 
-  if (channels.length <= 1) return null;
+  if (channels.length <= 1) return <div className="h-[88px]" />;
 
   return (
-    <div className="w-full max-w-[480px] mx-auto pt-4 pb-2 px-3">
+    <div
+      className={`w-full max-w-[480px] mx-auto pt-4 pb-2 px-3 transition-opacity duration-300 ${
+        ready ? "opacity-100" : "opacity-0"
+      }`}
+    >
       <div
         ref={scrollRef}
-        className="flex items-center gap-4 overflow-x-auto scrollbar-hide"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        className="flex items-center gap-4 overflow-x-auto"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
       >
         {/* 전체 채널 보기 */}
         <button
@@ -64,10 +79,10 @@ export default function ChannelBar({ currentSlug }: { currentSlug: string }) {
               key={ch.slug}
               data-slug={ch.slug}
               onClick={() => router.push(`/${ch.slug}`)}
-              className="flex flex-col items-center gap-1.5 shrink-0"
+              className="flex flex-col items-center gap-1.5 shrink-0 transition-all duration-200"
             >
               <div
-                className={`w-[60px] h-[60px] rounded-full overflow-hidden border-[3px] transition-all ${
+                className={`w-[60px] h-[60px] rounded-full overflow-hidden border-[3px] transition-all duration-200 ${
                   isActive
                     ? "border-blue-500 scale-110 shadow-md"
                     : "border-transparent opacity-60 hover:opacity-100"
@@ -86,7 +101,7 @@ export default function ChannelBar({ currentSlug }: { currentSlug: string }) {
                 )}
               </div>
               <span
-                className={`text-[10px] font-medium w-[60px] text-center truncate ${
+                className={`text-[10px] font-medium w-[60px] text-center truncate transition-colors duration-200 ${
                   isActive ? "text-gray-900 font-bold" : "text-gray-400"
                 }`}
               >
