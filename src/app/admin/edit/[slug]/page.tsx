@@ -260,6 +260,10 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   );
 
   const fetchAll = useCallback(async () => {
+    setLoading(true);
+    setOpenProfile(false);
+    setOpenSns(false);
+    setOpenLinks({});
     const res = await fetch(`/api/pages/${slug}`);
     if (!res.ok) { router.push("/admin"); return; }
     const data = await res.json();
