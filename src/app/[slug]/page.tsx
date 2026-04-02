@@ -66,9 +66,10 @@ export default async function SlugPage({
     notFound();
   }
 
-  const [linksRes, socialsRes] = await Promise.all([
+  const [linksRes, socialsRes, channelsRes] = await Promise.all([
     supabase.from("links").select("*").eq("page_id", page.id).order("sort_order"),
     supabase.from("socials").select("*").eq("page_id", page.id).order("sort_order"),
+    supabase.from("pages").select("slug, title, profile").order("sort_order", { ascending: true }),
   ]);
 
   const allLinks = (linksRes.data || []).filter((l: { enabled?: boolean }) => l.enabled !== false);
@@ -130,7 +131,7 @@ export default async function SlugPage({
         .link-btn:active { transform: scale(0.98); }
       `}</style>
       {/* Channel Bar */}
-      <ChannelBar currentSlug={slug} />
+      <ChannelBar currentSlug={slug} initialChannels={channelsRes.data || []} />
 
       {/* KakaoTalk Chat Button - from kakaotalk block or socials */}
       <ChatButton

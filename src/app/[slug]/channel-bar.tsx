@@ -46,13 +46,19 @@ type Channel = {
 // 모듈 레벨 캐시 - 페이지 이동해도 유지
 let cachedChannels: Channel[] | null = null;
 
-export default function ChannelBar({ currentSlug }: { currentSlug: string }) {
-  const [channels, setChannels] = useState<Channel[]>(cachedChannels || []);
-  const [ready, setReady] = useState(!!cachedChannels);
+export default function ChannelBar({ currentSlug, initialChannels }: { currentSlug: string; initialChannels?: Channel[] }) {
+  const [channels, setChannels] = useState<Channel[]>(initialChannels || cachedChannels || []);
+  const [ready, setReady] = useState(!!(initialChannels || cachedChannels));
   const scrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
+    if (initialChannels) {
+      cachedChannels = initialChannels;
+      setChannels(initialChannels);
+      setReady(true);
+      return;
+    }
     if (cachedChannels) {
       setChannels(cachedChannels);
       setReady(true);
@@ -70,7 +76,7 @@ export default function ChannelBar({ currentSlug }: { currentSlug: string }) {
         setReady(true);
       })
       .catch(() => setReady(true));
-  }, []);
+  }, [initialChannels]);
 
   // 현재 채널로 자동 스크롤
   useEffect(() => {
