@@ -1,0 +1,66 @@
+{
+  "heredaegu": {
+    "title": "히어대구",
+    "desc": "대구에서 가장 빠른 소식&뉴스",
+    "profile": "https://placehold.co/200x200/ff6b6b/white?text=HD",
+    "socials": [
+      { "platform": "instagram", "url": "https://instagram.com/heredaegu" },
+      { "platform": "facebook", "url": "https://facebook.com/heredaegu" },
+      { "platform": "tiktok", "url": "https://tiktok.com/@heredaegu" },
+      { "platform": "youtube", "url": "https://youtube.com/@heredaegu" },
+      { "platform": "naver", "url": "https://m.blog.naver.com/heredaegu" }
+    ],
+    "links": [
+      {
+        "label": "SNS문의/제보",
+        "url": "https://example.com",
+        "icon": "MessageCircle",
+        "thumbnail": "https://placehold.co/80x80/FFE812/000?text=TALK"
+      },
+      {
+        "label": "(오픈채팅)대구경북 찐맛집 소통방",
+        "url": "https://example.com",
+        "icon": "Users",
+        "thumbnail": "https://placehold.co/80x80/4ecdc4/white?text=Chat"
+      },
+      {
+        "label": "대구보물지도",
+        "url": "https://example.com",
+        "icon": "Map",
+        "thumbnail": "https://placehold.co/80x80/a8e6cf/white?text=Map"
+      },
+      {
+        "label": "다즐피플 홈",
+        "url": "https://dazzlepeople.com",
+        "icon": "Home",
+        "thumbnail": "https://placehold.co/80x80/ffd93d/white?text=Home"
+      }
+    ]
+  },
+  "heregumi": {
+    "title": "히어구미",
+    "desc": "구미의 모든 핫플 소식",
+    "profile": "https://placehold.co/200x200/4ecdc4/white?text=HG",
+    "socials": [
+      { "platform": "instagram", "url": "https://instagram.com/heregumi" },
+      { "platform": "kakaotalk", "url": "https://open.kakao.com/" }
+    ],
+    "links": [
+      {
+        "label": "맛집 리스트",
+        "url": "https://example.com",
+        "icon": "Utensils"
+      },
+      {
+        "label": "카페 리스트",
+        "url": "https://example.com",
+        "icon": "Coffee"
+      },
+      {
+        "label": "제휴 문의",
+        "url": "https://example.com",
+        "icon": "Mail"
+      }
+    ]
+  }
+}
