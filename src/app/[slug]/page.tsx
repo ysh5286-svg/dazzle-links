@@ -6,6 +6,7 @@ import LinkButton from "./link-button";
 import SocialIcons from "./social-icons";
 import DesignPreviewListener from "./design-preview";
 import ChannelBar from "./channel-bar";
+import InlineVideo from "./inline-video";
 import ChatButton from "./chat-button";
 
 export const revalidate = 60;
@@ -226,14 +227,7 @@ export default async function SlugPage({
                 function VideoThumb({ url }: { url: string }) {
                   const vid = getYoutubeId(url);
                   if (!vid) return null;
-                  return (
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="relative block rounded-xl overflow-hidden group aspect-[9/16]">
-                      <img src={`https://img.youtube.com/vi/${vid}/hqdefault.jpg`} alt="" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                        <svg className="w-14 h-14 drop-shadow-lg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="white" fillOpacity="0.9"/><path d="M20 16l12 8-12 8V16z" fill="#333"/></svg>
-                      </div>
-                    </a>
-                  );
+                  return <InlineVideo vid={vid} />;
                 }
 
                 if (videoLayout === "single") {
