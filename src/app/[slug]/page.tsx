@@ -219,8 +219,17 @@ export default async function SlugPage({
           </div>
         )}
 
+        {/* Homepage Link */}
+        <a href="https://dazzlepeople.com/default/" target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-gray-200 hover:bg-gray-50 active:scale-[0.98] transition-all">
+          <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+          <span className="text-xs text-gray-400 font-medium">dazzlepeople.com</span>
+        </a>
+
         {/* Footer */}
-        <p className="mt-4 text-xs text-gray-300">Powered by Dazzle People</p>
+        <p className="mt-2 text-xs text-gray-300">Powered by Dazzle People</p>
       </main>
     </>
   );
