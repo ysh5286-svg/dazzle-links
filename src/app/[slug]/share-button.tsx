@@ -7,18 +7,20 @@ export default function ShareButton() {
 
   async function handleShare() {
     const url = window.location.href;
+    const title = document.title;
 
-    // Use native share on mobile if available
+    // Mobile: native share sheet (카카오톡 등 선택 가능)
     if (navigator.share) {
       try {
-        await navigator.share({ url });
+        await navigator.share({ title, url });
         return;
       } catch {
-        // User cancelled or not supported, fall through to copy
+        // cancelled
       }
+      return;
     }
 
-    // Fallback: copy URL
+    // Desktop: 바로 클립보드 복사
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -32,7 +34,7 @@ export default function ShareButton() {
     <>
       <button
         onClick={handleShare}
-        className="absolute top-4 left-0 w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white active:scale-90 transition-all shadow-sm z-10"
+        className="absolute top-4 left-3 w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white active:scale-90 transition-all shadow-sm z-10"
         aria-label="공유"
       >
         <svg className="w-[18px] h-[18px] text-gray-600" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -42,8 +44,8 @@ export default function ShareButton() {
         </svg>
       </button>
       {copied && (
-        <div className="absolute top-16 left-0 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg z-10">
-          링크 복사됨!
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-5 py-2.5 rounded-full shadow-lg z-50 animate-pulse">
+          링크가 복사되었습니다
         </div>
       )}
     </>
