@@ -523,7 +523,8 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   const [socials, setSocials] = useState<SocialRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [previewKey, setPreviewKey] = useState(0);
+  const [previewKey] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [toast, setToast] = useState("");
   const [activeTab, setActiveTab] = useState<"page" | "design">("page");
@@ -563,7 +564,14 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   }, [slug, router]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
-  function refreshPreview() { setPreviewKey((k) => k + 1); }
+  function refreshPreview() {
+    try {
+      iframeRef.current?.contentWindow?.location.reload();
+    } catch {
+      // cross-origin fallback
+      if (iframeRef.current) iframeRef.current.src = iframeRef.current.src;
+    }
+  }
 
   async function savePageInfo() {
     setSaving(true);
@@ -777,7 +785,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
         <div className="w-[420px] shrink-0 flex items-start justify-center py-8 px-6">
           <div className="w-[375px] h-[720px] bg-white rounded-[40px] shadow-xl border border-gray-200 overflow-hidden relative">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-[28px] bg-black rounded-b-2xl z-10" />
-            <iframe key={previewKey} src={`/${slug}`} className="w-full h-full border-0" title="미리보기" />
+            <iframe ref={iframeRef} src={`/${slug}`} className="w-full h-full border-0" title="미리보기" />
           </div>
         </div>
 
