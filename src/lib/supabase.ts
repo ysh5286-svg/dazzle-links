@@ -15,6 +15,12 @@ export type PageRow = {
   desc: string;
   profile: string;
   created_at: string;
+  bg_color: string;
+  hover_color: string;
+  btn_color: string;
+  btn_shape: string;
+  btn_action: string;
+  font: string;
 };
 
 export type LinkRow = {

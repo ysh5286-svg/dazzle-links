@@ -4,6 +4,7 @@ import { useEffect, useState, use, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { PageRow, LinkRow, SocialRow } from "@/lib/supabase";
 import PageSwitcher from "./page-switcher";
+import DesignTab from "./design-tab";
 import {
   DndContext,
   closestCenter,
@@ -241,6 +242,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   const [previewKey, setPreviewKey] = useState(0);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [toast, setToast] = useState("");
+  const [activeTab, setActiveTab] = useState<"page" | "design">("page");
 
   const [openProfile, setOpenProfile] = useState(false);
   const [openSns, setOpenSns] = useState(false);
@@ -370,7 +372,29 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
         </div>
 
         {/* Right: Settings */}
-        <div className="flex-1 bg-[#f5f6f8] overflow-y-auto py-6 px-5">
+        <div className="flex-1 bg-[#f5f6f8] flex flex-col overflow-hidden">
+          {/* Tab Navigation */}
+          <div className="bg-white border-b border-gray-200 px-6 flex shrink-0">
+            <button onClick={() => setActiveTab("page")}
+              className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === "page" ? "border-gray-900 text-gray-900 bg-gray-900 text-white rounded-t-xl" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
+              페이지
+            </button>
+            <button onClick={() => setActiveTab("design")}
+              className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === "design" ? "border-gray-900 text-gray-900 bg-gray-900 text-white rounded-t-xl" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
+              디자인
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="flex-1 overflow-y-auto">
+            {activeTab === "design" && page ? (
+              <DesignTab page={page} onSave={async (updates) => {
+                await fetch(`/api/pages/${slug}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updates) });
+                await fetchAll();
+                refreshPreview();
+              }} />
+            ) : (
+          <div className="py-6 px-5">
           <div className="max-w-xl mx-auto flex flex-col gap-3">
 
             {/* 프로필 */}
@@ -443,6 +467,9 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
             </button>
 
             <button onClick={deletePage} className="w-full py-2.5 text-xs text-red-400 hover:text-red-600 mt-2">이 페이지 삭제</button>
+          </div>
+          </div>
+            )}
           </div>
         </div>
       </div>
