@@ -73,7 +73,7 @@ export default function SocialIcons({
             href={s.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:opacity-70 active:scale-90 transition-all duration-150"
+            className="hover:scale-125 active:scale-90 transition-all duration-200"
           >
             <Icon className="w-7 h-7 text-gray-800" />
           </a>
