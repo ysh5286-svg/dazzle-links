@@ -71,7 +71,8 @@ export default async function SlugPage({
     supabase.from("socials").select("*").eq("page_id", page.id).order("sort_order"),
   ]);
 
-  const links = (linksRes.data || []).filter((l: { enabled?: boolean }) => l.enabled !== false);
+  const allLinks = (linksRes.data || []).filter((l: { enabled?: boolean }) => l.enabled !== false);
+  const links = allLinks.filter((l: { layout?: string }) => l.layout !== "kakaotalk");
   const socials = socialsRes.data || [];
 
   const bgColor = page.bg_color || "#f9fafb";
@@ -131,8 +132,11 @@ export default async function SlugPage({
       {/* Channel Bar */}
       <ChannelBar currentSlug={slug} />
 
-      {/* KakaoTalk Chat Button */}
-      <ChatButton url={socials.find((s: { platform: string }) => s.platform === "kakaotalk")?.url} />
+      {/* KakaoTalk Chat Button - from kakaotalk block or socials */}
+      <ChatButton url={
+        allLinks.find((l: { layout?: string }) => l.layout === "kakaotalk")?.url
+        || socials.find((s: { platform: string }) => s.platform === "kakaotalk")?.url
+      } />
 
       <main className="w-full max-w-[480px] mx-auto px-5 pt-4 pb-10 flex flex-col items-center gap-8">
         {/* Profile */}
