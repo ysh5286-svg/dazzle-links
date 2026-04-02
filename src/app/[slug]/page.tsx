@@ -7,6 +7,7 @@ import SocialIcons from "./social-icons";
 import DesignPreviewListener from "./design-preview";
 import ChannelBar from "./channel-bar";
 import InlineVideo from "./inline-video";
+import VideoCarousel from "./video-carousel";
 import ChatButton from "./chat-button";
 
 export const revalidate = 60;
@@ -238,13 +239,7 @@ export default async function SlugPage({
                   );
                 }
                 if (videoLayout === "carousel") {
-                  return (
-                    <div key={link.id} className="w-full overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-                      <div className="flex gap-3" style={{ width: `${validUrls.length * 200}px` }}>
-                        {validUrls.map((u: string, i: number) => <div key={i} className="w-[180px] shrink-0"><VideoThumb url={u} /></div>)}
-                      </div>
-                    </div>
-                  );
+                  return <VideoCarousel key={link.id} urls={validUrls} />;
                 }
                 // grid (2열)
                 return (
