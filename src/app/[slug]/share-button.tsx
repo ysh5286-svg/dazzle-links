@@ -46,7 +46,7 @@ export default function ShareButton() {
     <>
       <button
         onClick={handleShare}
-        className="absolute top-4 left-3 w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white active:scale-90 transition-all shadow-sm z-10"
+        className="absolute top-4 left-3 w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-gray-200 active:scale-90 transition-all shadow-sm z-10"
         aria-label="공유"
       >
         <svg className="w-[18px] h-[18px] text-gray-600" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
