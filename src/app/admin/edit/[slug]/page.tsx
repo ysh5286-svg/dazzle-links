@@ -277,6 +277,85 @@ function TextEditor({ link, onUpdate }: { link: LinkRow; onUpdate: (id: string, 
   );
 }
 
+// --- Video Editor ---
+
+function VideoEditor({ link, onUpdate }: { link: LinkRow; onUpdate: (id: string, updates: Partial<LinkRow>) => void }) {
+  const urls: string[] = (() => { try { return JSON.parse(link.url || "[]"); } catch { return []; } })();
+  const [videoUrls, setVideoUrls] = useState<string[]>(urls.length ? urls : [""]);
+  const [videoLayout, setVideoLayout] = useState(link.label || "grid");
+  const [showOptions, setShowOptions] = useState(false);
+
+  function saveUrls(newUrls: string[]) {
+    setVideoUrls(newUrls);
+    onUpdate(link.id, { url: JSON.stringify(newUrls.filter((u) => u.trim())) });
+  }
+
+  function updateUrl(index: number, value: string) {
+    const newUrls = [...videoUrls];
+    newUrls[index] = value;
+    setVideoUrls(newUrls);
+  }
+
+  function saveUrl(index: number) {
+    onUpdate(link.id, { url: JSON.stringify(videoUrls.filter((u) => u.trim())) });
+  }
+
+  function addUrl() {
+    setVideoUrls([...videoUrls, ""]);
+  }
+
+  function removeUrl(index: number) {
+    const newUrls = videoUrls.filter((_, i) => i !== index);
+    saveUrls(newUrls.length ? newUrls : [""]);
+  }
+
+  const layouts = [
+    { key: "single", label: "기본 배치", icon: <div className="w-12 h-12 border-2 border-gray-300 rounded-lg flex items-center justify-center"><div className="w-8 h-8 bg-gray-200 rounded" /></div> },
+    { key: "carousel", label: "캐러셀", icon: <div className="w-12 h-12 border-2 border-gray-300 rounded-lg flex items-center justify-center gap-0.5"><div className="w-5 h-8 bg-gray-200 rounded" /><div className="w-3 h-8 bg-gray-100 rounded" /></div> },
+    { key: "grid", label: "2열 배치", icon: <div className="w-12 h-12 border-2 border-gray-300 rounded-lg grid grid-cols-2 gap-0.5 p-1"><div className="bg-gray-200 rounded" /><div className="bg-gray-200 rounded" /><div className="bg-gray-200 rounded" /><div className="bg-gray-200 rounded" /></div> },
+  ];
+
+  return (
+    <div className="px-5 pb-5 flex flex-col gap-3 border-t border-gray-50 pt-4">
+      <label className="text-xs font-medium text-gray-500 mb-1 block">동영상 주소</label>
+      {videoUrls.map((url, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <svg className="w-4 h-4 text-gray-300 shrink-0" viewBox="0 0 16 20" fill="currentColor">
+            <circle cx="5" cy="4" r="1.5" /><circle cx="11" cy="4" r="1.5" />
+            <circle cx="5" cy="10" r="1.5" /><circle cx="11" cy="10" r="1.5" />
+            <circle cx="5" cy="16" r="1.5" /><circle cx="11" cy="16" r="1.5" />
+          </svg>
+          <input type="text" value={url} onChange={(e) => updateUrl(i, e.target.value)} onBlur={() => saveUrl(i)}
+            placeholder="https://www.youtube.com/shorts/..."
+            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
+          <button onClick={() => removeUrl(i)} className="text-gray-300 hover:text-red-500 shrink-0">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          </button>
+        </div>
+      ))}
+      <button onClick={addUrl} className="w-full py-2.5 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-800">+ 동영상 추가</button>
+
+      <button onClick={() => setShowOptions(!showOptions)} className="self-end text-xs text-gray-500 hover:text-gray-700 font-medium">
+        옵션 {showOptions ? "접기" : "펼치기"} {showOptions ? "∧" : "∨"}
+      </button>
+      {showOptions && (
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-2 block">레이아웃</label>
+          <div className="flex gap-3">
+            {layouts.map((l) => (
+              <button key={l.key} onClick={() => { setVideoLayout(l.key); onUpdate(link.id, { label: l.key }); }}
+                className={`flex-1 flex flex-col items-center gap-2 py-3 rounded-xl border-2 transition-all ${videoLayout === l.key ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:border-gray-300"}`}>
+                {l.icon}
+                <span className="text-[10px] text-gray-500 font-medium">{l.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // --- Block Add Modal ---
 
 function BlockAddModal({ onClose, onSelect }: { onClose: () => void; onSelect: (type: string) => void }) {
@@ -286,6 +365,7 @@ function BlockAddModal({ onClose, onSelect }: { onClose: () => void; onSelect: (
     { type: "sns", label: "SNS 연결", desc: "소셜 채널 연결", color: "bg-green-100 text-green-600", icon: "S" },
     { type: "spacer", label: "여백", desc: "블럭 간격 조절", color: "bg-purple-100 text-purple-600", icon: "—" },
     { type: "text", label: "텍스트", desc: "글 작성", color: "bg-blue-100 text-blue-600", icon: "T" },
+    { type: "video", label: "동영상", desc: "유튜브 영상 임베드", color: "bg-red-100 text-red-600", icon: "▶" },
   ];
   return (
     <>
@@ -381,10 +461,16 @@ function SortableLinkBlock({
               <span className={`text-sm font-semibold truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>텍스트</span>
               <span className={`text-sm truncate ${link.enabled ? "text-gray-500" : "text-gray-300"}`}>{link.label}</span>
             </>
+          ) : link.layout === "video" ? (
+            <>
+              <span className="w-5 h-5 rounded bg-red-100 flex items-center justify-center text-[10px] font-bold text-red-600 shrink-0">▶</span>
+              <span className={`text-sm font-semibold truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>동영상</span>
+              <span className={`text-xs ${link.enabled ? "text-gray-400" : "text-gray-300"}`}>{(() => { try { return JSON.parse(link.url || "[]").length; } catch { return 0; } })()}개</span>
+            </>
           ) : (
             <span className={`text-sm font-semibold truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>단일 링크</span>
           )}
-          {link.layout !== "spacer" && link.layout !== "text" && <span className={`text-sm truncate ${link.enabled ? "text-gray-500" : "text-gray-300"}`}>{link.label}</span>}
+          {link.layout !== "spacer" && link.layout !== "text" && link.layout !== "video" && <span className={`text-sm truncate ${link.enabled ? "text-gray-500" : "text-gray-300"}`}>{link.label}</span>}
         </button>
 
         {/* Right actions */}
@@ -400,6 +486,8 @@ function SortableLinkBlock({
           onChange={(h, ls) => onUpdate(link.id, { label: String(h), url: ls })} />
       ) : isOpen && link.layout === "text" ? (
         <TextEditor link={link} onUpdate={onUpdate} />
+      ) : isOpen && link.layout === "video" ? (
+        <VideoEditor link={link} onUpdate={onUpdate} />
       ) : isOpen && (
         <div className="px-5 pb-5 flex flex-col gap-3 border-t border-gray-50 pt-4">
           <div>
@@ -578,6 +666,15 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     refreshPreview();
   }
 
+  async function addVideo() {
+    await fetch(`/api/pages/${slug}/links`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: "grid", url: JSON.stringify([""]), sort_order: links.length, layout: "video", enabled: true }),
+    });
+    await fetchAll();
+    refreshPreview();
+  }
+
   async function addText() {
     await fetch(`/api/pages/${slug}/links`, {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -609,6 +706,8 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
       addSpacer();
     } else if (type === "text") {
       addText();
+    } else if (type === "video") {
+      addVideo();
     } else {
       setToast("준비 중인 기능입니다");
     }
