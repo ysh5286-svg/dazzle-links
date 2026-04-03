@@ -413,7 +413,7 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
 // --- Sortable Link Block ---
 
 function SortableLinkBlock({
-  link, isOpen, onToggleOpen, onUpdate, onDelete, onToggleEnabled, onCopy, onCopyToPage,
+  link, isOpen, onToggleOpen, onUpdate, onDelete, onToggleEnabled, onCopy, onCopyToPage, onRefreshPreview,
 }: {
   link: LinkRow;
   isOpen: boolean;
@@ -423,6 +423,7 @@ function SortableLinkBlock({
   onToggleEnabled: (id: string, enabled: boolean) => void;
   onCopy: (id: string) => void;
   onCopyToPage: (id: string, targetSlug: string) => void;
+  onRefreshPreview: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id });
   const style = {
@@ -501,7 +502,7 @@ function SortableLinkBlock({
             groupLayout={(() => { try { return JSON.parse(link.thumbnail || "{}").layout || "grid3"; } catch { return "grid3"; } })()}
             listMode={(() => { try { return JSON.parse(link.thumbnail || "{}").listMode || "all"; } catch { return "all"; } })()}
             onLayoutChange={(layout, mode) => onUpdate(link.id, { thumbnail: JSON.stringify({ layout, listMode: mode }) })}
-            onRefresh={() => {}} />
+            onRefresh={onRefreshPreview} />
         </div>
       ) : isOpen && link.layout === "spacer" ? (
         <SpacerEditor height={parseInt(link.label) || 40} lineStyle={link.url || "none"}
@@ -980,6 +981,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                     onToggleEnabled={(id, enabled) => updateLink(id, { enabled })}
                     onCopy={copyLink}
                     onCopyToPage={copyLinkToPage}
+                    onRefreshPreview={refreshPreview}
                   />
                 ))}
               </SortableContext>
