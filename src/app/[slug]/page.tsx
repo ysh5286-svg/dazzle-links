@@ -11,7 +11,7 @@ import VideoCarousel from "./video-carousel";
 import ShareButton from "./share-button";
 import ChatButton from "./chat-button";
 
-export const revalidate = 60;
+export const revalidate = 10;
 
 const FONT_MAP: Record<string, string> = {
   pretendard: "'Pretendard', -apple-system, sans-serif",
