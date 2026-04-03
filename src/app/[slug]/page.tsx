@@ -59,20 +59,21 @@ export default async function SlugPage({
 }) {
   const { slug } = await params;
 
-  const { data: page } = await supabase
-    .from("pages")
-    .select("*")
-    .eq("slug", slug)
-    .single();
+  // 모든 쿼리를 최대한 병렬로 실행
+  const [pageRes, channelsRes] = await Promise.all([
+    supabase.from("pages").select("*").eq("slug", slug).single(),
+    supabase.from("pages").select("slug, title, profile").order("sort_order", { ascending: true }),
+  ]);
 
+  const page = pageRes.data;
   if (!page) {
     notFound();
   }
 
-  const [linksRes, socialsRes, channelsRes] = await Promise.all([
+  // page.id를 알았으니 links + socials 병렬 호출
+  const [linksRes, socialsRes] = await Promise.all([
     supabase.from("links").select("*").eq("page_id", page.id).order("sort_order"),
     supabase.from("socials").select("*").eq("page_id", page.id).order("sort_order"),
-    supabase.from("pages").select("slug, title, profile").order("sort_order", { ascending: true }),
   ]);
 
   const allLinks = (linksRes.data || []).filter((l: { enabled?: boolean }) => l.enabled !== false);
