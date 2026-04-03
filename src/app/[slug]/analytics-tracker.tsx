@@ -2,17 +2,27 @@
 
 import { useEffect } from "react";
 
+// 자기 도메인 목록
+const SELF_DOMAINS = [
+  "link.dazzlepeople.com",
+  "dazzle-links-yoon-seonghos-projects.vercel.app",
+  "localhost",
+];
+
 export default function AnalyticsTracker({ slug }: { slug: string }) {
   useEffect(() => {
     if (window.self !== window.top) return;
 
-    // 유입 경로: document.referrer에서 자기 도메인 제외
+    // 유입 경로: 자기 도메인이면 제외
     let referer = document.referrer || "";
     try {
       const refHost = new URL(referer).hostname;
-      if (refHost === window.location.hostname) referer = "";
+      if (SELF_DOMAINS.some((d) => refHost === d || refHost.endsWith("." + d))) {
+        referer = "";
+      }
     } catch { /* invalid URL */ }
 
+    // referer가 비어있으면 (직접 접속) 기록은 하되 referer 없이
     fetch("/api/analytics", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
