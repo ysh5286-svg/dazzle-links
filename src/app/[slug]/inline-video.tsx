@@ -22,11 +22,15 @@ export default function InlineVideo({ vid }: { vid: string }) {
     <button onClick={() => setPlaying(true)} className="relative block w-full rounded-xl overflow-hidden aspect-[9/16] group">
       <img src={`https://img.youtube.com/vi/${vid}/hqdefault.jpg`} alt="" className="w-full h-full object-cover" />
       <div className="absolute inset-0 flex items-center justify-center">
-        {/* YouTube style red play button */}
-        <svg className="w-16 h-11 drop-shadow-lg opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all" viewBox="0 0 68 48">
-          <path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z" fill="#FF0000"/>
-          <path d="M45 24L27 14v20" fill="white"/>
-        </svg>
+        {/* YouTube Shorts style: red brush stroke + white play */}
+        <div className="relative w-14 h-16 group-hover:scale-110 transition-transform drop-shadow-lg">
+          <svg viewBox="0 0 56 64" className="w-full h-full">
+            {/* Red brush stroke */}
+            <path d="M28 2c8 0 18 2 22 8s6 14 4 22-6 16-12 22-10 8-14 8-8-2-14-8S4 40 2 32s0-16 4-22S20 2 28 2z" fill="#FF0000" />
+            {/* White play triangle */}
+            <path d="M23 20l16 12-16 12V20z" fill="white" />
+          </svg>
+        </div>
       </div>
     </button>
   );
