@@ -9,7 +9,7 @@ type AnalyticsData = {
   clickRate: number;
   referers: { name: string; count: number }[];
   countries: { name: string; count: number }[];
-  linkClicks: { link_id: string; count: number }[];
+  linkClicks: { link_id: string; count: number; daily: { date: string; clicks: number }[] }[];
 };
 
 const PERIODS = [
@@ -22,7 +22,134 @@ const PERIODS = [
 
 const COLORS = ["#f87171", "#fb923c", "#facc15", "#4ade80", "#60a5fa", "#a78bfa"];
 
-export default function AnalyticsTab({ slug, linkLabels }: { slug: string; linkLabels: Record<string, string> }) {
+function LinkClickAccordion({ lc, label }: { lc: { link_id: string; count: number; daily: { date: string; clicks: number }[] }; label: string }) {
+  const [open, setOpen] = useState(false);
+  const maxClicks = Math.max(...lc.daily.map((d) => d.clicks), 1);
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="w-6 h-6 rounded-md bg-green-100 flex items-center justify-center text-green-600 text-[10px] font-bold">L</span>
+          <span className="text-sm font-semibold text-gray-800">단일 링크</span>
+          <span className="text-sm text-gray-500 truncate max-w-[120px]">{label}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-blue-500">{lc.count}회</span>
+          <svg className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </button>
+      {open && lc.daily.length > 0 && (
+        <div className="px-4 pb-4 border-t border-gray-50 pt-3">
+          {/* Mini line chart */}
+          <div className="relative h-24">
+            <div className="absolute left-0 top-0 bottom-4 w-6 flex flex-col justify-between text-[9px] text-gray-400">
+              <span>{maxClicks}</span>
+              <span>0</span>
+            </div>
+            <svg className="ml-6 w-[calc(100%-24px)] h-20" viewBox={`0 0 ${Math.max(lc.daily.length * 50, 100)} 80`} preserveAspectRatio="none">
+              <polyline
+                fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                points={lc.daily.map((d, i) => `${i * 50 + 25},${80 - (d.clicks / maxClicks) * 70}`).join(" ")}
+              />
+              {lc.daily.map((d, i) => (
+                <circle key={i} cx={i * 50 + 25} cy={80 - (d.clicks / maxClicks) * 70} r="3" fill="#3b82f6" />
+              ))}
+            </svg>
+            <div className="ml-6 flex justify-between text-[8px] text-gray-400 mt-0.5" style={{ width: "calc(100% - 24px)" }}>
+              {lc.daily.filter((_, i) => i % Math.max(1, Math.floor(lc.daily.length / 4)) === 0).map((d) => (
+                <span key={d.date}>{d.date.substring(5)}</span>
+              ))}
+            </div>
+          </div>
+          <div className="mt-2 text-xs text-gray-500">{label}</div>
+          <div className="text-right text-xs font-bold text-blue-500">클릭 {lc.count}회</div>
+        </div>
+      )}
+      {open && lc.daily.length === 0 && (
+        <div className="px-4 pb-4 border-t border-gray-50 pt-3">
+          <p className="text-xs text-gray-300 text-center">클릭 데이터가 없습니다</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SnsClickAccordion({ snsClicks, totalClicks, daily, socialUrls }: {
+  snsClicks: { link_id: string; count: number; daily: { date: string; clicks: number }[] }[];
+  totalClicks: number;
+  daily: { date: string; clicks: number }[];
+  socialUrls: Record<string, string>;
+}) {
+  const [open, setOpen] = useState(false);
+  const maxY = Math.max(...daily.map((d) => d.clicks), 1);
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="w-6 h-6 rounded-md bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center text-white text-[10px] font-bold">S</span>
+          <span className="text-sm font-semibold text-gray-800">SNS 연결</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-blue-500">{totalClicks}회</span>
+          <svg className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </button>
+      {open && (
+        <div className="px-4 pb-4 border-t border-gray-50 pt-3">
+          {/* Mini chart */}
+          {daily.length > 0 && (
+            <div className="relative h-20 mb-3">
+              <div className="absolute left-0 top-0 bottom-4 w-6 flex flex-col justify-between text-[9px] text-gray-400">
+                <span>{maxY}</span>
+                <span>0</span>
+              </div>
+              <svg className="ml-6 w-[calc(100%-24px)] h-16" viewBox={`0 0 ${Math.max(daily.length * 50, 100)} 64`} preserveAspectRatio="none">
+                <polyline fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  points={daily.map((d, i) => `${i * 50 + 25},${64 - (d.clicks / maxY) * 56}`).join(" ")} />
+                {daily.map((d, i) => <circle key={i} cx={i * 50 + 25} cy={64 - (d.clicks / maxY) * 56} r="3" fill="#3b82f6" />)}
+              </svg>
+              <div className="ml-6 flex justify-between text-[8px] text-gray-400 mt-0.5" style={{ width: "calc(100% - 24px)" }}>
+                {daily.filter((_, i) => i % Math.max(1, Math.floor(daily.length / 4)) === 0).map((d) => (
+                  <span key={d.date}>{d.date.substring(5)}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Per-platform breakdown */}
+          <div className="flex flex-col gap-2">
+            {snsClicks.map((sc) => {
+              const platform = sc.link_id.replace("sns:", "");
+              const label = PLATFORM_LABELS[sc.link_id] || platform;
+              const url = socialUrls[platform] || "";
+              return (
+                <div key={sc.link_id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-800">{label}</p>
+                    {url && <p className="text-[10px] text-gray-400 truncate max-w-[200px]">{url}</p>}
+                  </div>
+                  <span className="text-xs font-bold text-blue-500 shrink-0">클릭 {sc.count}회</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const PLATFORM_LABELS: Record<string, string> = {
+  "sns:instagram": "인스타그램", "sns:facebook": "페이스북", "sns:tiktok": "틱톡",
+  "sns:youtube": "유튜브", "sns:naver": "네이버", "sns:kakaotalk": "카카오톡",
+};
+
+export default function AnalyticsTab({ slug, linkLabels, socialUrls }: { slug: string; linkLabels: Record<string, string>; socialUrls?: Record<string, string> }) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [period, setPeriod] = useState("7d");
   const [loading, setLoading] = useState(true);
@@ -103,19 +230,28 @@ export default function AnalyticsTab({ slug, linkLabels }: { slug: string; linkL
         )}
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-blue-50 rounded-xl p-3 text-center">
-          <p className="text-[10px] text-gray-500 mb-1">조회수</p>
-          <p className="text-lg font-bold text-gray-900">{data.totalViews}<span className="text-xs font-normal text-gray-500">회</span></p>
+      {/* Summary Cards - Dark style */}
+      <div className="grid grid-cols-3 gap-0 bg-gray-900 rounded-2xl overflow-hidden">
+        <div className="p-3 text-center border-r border-gray-700">
+          <div className="flex items-center justify-center gap-1 mb-1">
+            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+            <span className="text-[10px] text-gray-400">조회수</span>
+          </div>
+          <p className="text-lg font-bold text-white">{data.totalViews}<span className="text-xs font-normal text-gray-400">회</span></p>
         </div>
-        <div className="bg-blue-50 rounded-xl p-3 text-center">
-          <p className="text-[10px] text-gray-500 mb-1">클릭 수</p>
-          <p className="text-lg font-bold text-gray-900">{data.totalClicks}<span className="text-xs font-normal text-gray-500">회</span></p>
+        <div className="p-3 text-center border-r border-gray-700">
+          <div className="flex items-center justify-center gap-1 mb-1">
+            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" /></svg>
+            <span className="text-[10px] text-gray-400">클릭 수</span>
+          </div>
+          <p className="text-lg font-bold text-white">{data.totalClicks}<span className="text-xs font-normal text-gray-400">회</span></p>
         </div>
-        <div className="bg-blue-50 rounded-xl p-3 text-center">
-          <p className="text-[10px] text-gray-500 mb-1">클릭율</p>
-          <p className="text-lg font-bold text-gray-900">{data.clickRate}<span className="text-xs font-normal text-gray-500">%</span></p>
+        <div className="p-3 text-center">
+          <div className="flex items-center justify-center gap-1 mb-1">
+            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <span className="text-[10px] text-gray-400">클릭율</span>
+          </div>
+          <p className="text-lg font-bold text-white">{data.clickRate}<span className="text-xs font-normal text-gray-400">%</span></p>
         </div>
       </div>
 
@@ -203,18 +339,31 @@ export default function AnalyticsTab({ slug, linkLabels }: { slug: string; linkL
         );
       })()}
 
-      {/* Link Clicks */}
-      {data.linkClicks.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3">블럭별 클릭수</h3>
-          <div className="flex flex-col gap-2">
-            {data.linkClicks.map((lc, i) => (
-              <div key={i} className="flex items-center justify-between py-1.5">
-                <span className="text-xs text-gray-600 truncate">{linkLabels[lc.link_id] || lc.link_id.substring(0, 8)}</span>
-                <span className="text-xs font-bold text-gray-900 shrink-0 ml-2">{lc.count}회</span>
-              </div>
-            ))}
-          </div>
+      {/* SNS Clicks */}
+      {(() => {
+        const snsClicks = data.linkClicks.filter((lc) => lc.link_id.startsWith("sns:"));
+        const totalSnsClicks = snsClicks.reduce((s, lc) => s + lc.count, 0);
+        const snsDailyAll: Record<string, number> = {};
+        snsClicks.forEach((lc) => lc.daily.forEach((d) => { snsDailyAll[d.date] = (snsDailyAll[d.date] || 0) + d.clicks; }));
+        const snsDailySorted = Object.entries(snsDailyAll).sort(([a], [b]) => a.localeCompare(b)).map(([date, clicks]) => ({ date, clicks }));
+
+        if (snsClicks.length === 0) return null;
+        return (
+          <SnsClickAccordion
+            snsClicks={snsClicks}
+            totalClicks={totalSnsClicks}
+            daily={snsDailySorted}
+            socialUrls={socialUrls || {}}
+          />
+        );
+      })()}
+
+      {/* Link Clicks - Accordion */}
+      {data.linkClicks.filter((lc) => !lc.link_id.startsWith("sns:")).length > 0 && (
+        <div className="flex flex-col gap-2">
+          {data.linkClicks.filter((lc) => !lc.link_id.startsWith("sns:")).map((lc) => (
+            <LinkClickAccordion key={lc.link_id} lc={lc} label={linkLabels[lc.link_id] || lc.link_id.substring(0, 8)} />
+          ))}
         </div>
       )}
     </div>

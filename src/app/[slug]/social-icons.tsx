@@ -82,6 +82,7 @@ export default function SocialIcons({
           <a
             key={i}
             href={s.url}
+            data-link-id={`sns:${s.platform}`}
             target="_blank"
             rel="noopener noreferrer"
             className="hover:scale-125 active:scale-90 transition-all duration-200"

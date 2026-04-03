@@ -87,16 +87,26 @@ export async function GET(request: NextRequest) {
     .slice(0, 5)
     .map(([name, count]) => ({ name, count }));
 
-  // 링크별 클릭수
+  // 링크별 클릭수 + 일별 데이터
   const linkClickMap: Record<string, number> = {};
+  const linkDailyMap: Record<string, Record<string, number>> = {};
   for (const e of rows) {
     if (e.event_type === "click" && e.link_id) {
       linkClickMap[e.link_id] = (linkClickMap[e.link_id] || 0) + 1;
+      const day = e.created_at.substring(0, 10);
+      if (!linkDailyMap[e.link_id]) linkDailyMap[e.link_id] = {};
+      linkDailyMap[e.link_id][day] = (linkDailyMap[e.link_id][day] || 0) + 1;
     }
   }
   const linkClicks = Object.entries(linkClickMap)
     .sort(([, a], [, b]) => b - a)
-    .map(([link_id, count]) => ({ link_id, count }));
+    .map(([link_id, count]) => ({
+      link_id,
+      count,
+      daily: Object.entries(linkDailyMap[link_id] || {})
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, clicks]) => ({ date, clicks })),
+    }));
 
   // 유입 국가
   const COUNTRY_NAMES: Record<string, string> = {

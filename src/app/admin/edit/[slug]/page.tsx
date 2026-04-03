@@ -857,7 +857,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
           {/* Tab Content */}
           <div className="flex-1 overflow-y-scroll">
             {activeTab === "analytics" ? (
-              <AnalyticsTab slug={slug} linkLabels={Object.fromEntries(links.map((l) => [l.id, l.label]))} />
+              <AnalyticsTab slug={slug} linkLabels={Object.fromEntries(links.map((l) => [l.id, l.label]))} socialUrls={Object.fromEntries(socials.map((s) => [s.platform, s.url]))} />
             ) : activeTab === "design" && page ? (
               <DesignTab page={page} onSave={async (updates) => {
                 await fetch(`/api/pages/${slug}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updates) });
