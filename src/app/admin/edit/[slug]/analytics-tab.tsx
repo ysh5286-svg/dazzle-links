@@ -262,11 +262,10 @@ export default function AnalyticsTab({ slug, linkLabels, linkUrls, socialUrls }:
       </div>
 
       {/* Referer Donut Chart */}
-      {data.referers.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">유입 채널</h3>
+      <div className="bg-white rounded-2xl border border-gray-100 p-4">
+        <h3 className="text-sm font-semibold text-gray-800 mb-4">유입 채널</h3>
+        {data.referers.length > 0 ? (
           <div className="flex items-center gap-6">
-            {/* Donut */}
             <div className="relative w-28 h-28 shrink-0">
               <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                 {(() => {
@@ -287,7 +286,6 @@ export default function AnalyticsTab({ slug, linkLabels, linkUrls, socialUrls }:
                 <span className="text-xs font-bold text-gray-600">{totalReferers}</span>
               </div>
             </div>
-            {/* Legend */}
             <div className="flex flex-col gap-1.5">
               {data.referers.map((r, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -298,8 +296,10 @@ export default function AnalyticsTab({ slug, linkLabels, linkUrls, socialUrls }:
               ))}
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-xs text-gray-300 text-center py-3">기록이 없습니다</p>
+        )}
+      </div>
 
       {/* Internal Navigation */}
       {data.internals && (
@@ -321,45 +321,50 @@ export default function AnalyticsTab({ slug, linkLabels, linkUrls, socialUrls }:
       )}
 
       {/* Country Donut Chart */}
-      {data.countries && data.countries.length > 0 && (() => {
-        const totalCountries = data.countries.reduce((s, c) => s + c.count, 0);
+      {(() => {
+        const countries = data.countries || [];
+        const totalCountries = countries.reduce((s, c) => s + c.count, 0);
         return (
           <div className="bg-white rounded-2xl border border-gray-100 p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-800">유입 국가</h3>
               <span className="text-[10px] text-gray-400">TOP5</span>
             </div>
-            <div className="flex items-center gap-6">
-              <div className="relative w-28 h-28 shrink-0">
-                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                  {(() => {
-                    let offset = 0;
-                    return data.countries.map((c, i) => {
-                      const pct = (c.count / totalCountries) * 100;
-                      const dash = `${pct * 2.51} ${251 - pct * 2.51}`;
-                      const el = (
-                        <circle key={i} cx="50" cy="50" r="40" fill="none" stroke={COLORS[i % COLORS.length]}
-                          strokeWidth="18" strokeDasharray={dash} strokeDashoffset={-offset * 2.51} />
-                      );
-                      offset += pct;
-                      return el;
-                    });
-                  })()}
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-[10px] font-bold text-gray-500">{Math.round((data.countries[0]?.count || 0) / totalCountries * 100)}%</span>
+            {countries.length > 0 ? (
+              <div className="flex items-center gap-6">
+                <div className="relative w-28 h-28 shrink-0">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    {(() => {
+                      let offset = 0;
+                      return countries.map((c, i) => {
+                        const pct = (c.count / totalCountries) * 100;
+                        const dash = `${pct * 2.51} ${251 - pct * 2.51}`;
+                        const el = (
+                          <circle key={i} cx="50" cy="50" r="40" fill="none" stroke={COLORS[i % COLORS.length]}
+                            strokeWidth="18" strokeDasharray={dash} strokeDashoffset={-offset * 2.51} />
+                        );
+                        offset += pct;
+                        return el;
+                      });
+                    })()}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-gray-500">{totalCountries > 0 ? Math.round((countries[0]?.count || 0) / totalCountries * 100) : 0}%</span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {countries.map((c, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                      <span className="text-xs text-gray-600">{c.count}</span>
+                      <span className="text-xs text-gray-800">{c.name}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="flex flex-col gap-1.5">
-                {data.countries.map((c, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                    <span className="text-xs text-gray-600">{c.count}</span>
-                    <span className="text-xs text-gray-800">{c.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            ) : (
+              <p className="text-xs text-gray-300 text-center py-3">기록이 없습니다</p>
+            )}
           </div>
         );
       })()}
