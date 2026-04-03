@@ -126,19 +126,19 @@ function SnsClickAccordion({ snsClicks, totalClicks, daily, socialUrls }: {
               </div>
             </div>
           )}
-          {/* Per-platform breakdown */}
+          {/* Per-platform breakdown - show all platforms, even 0 clicks */}
           <div className="flex flex-col gap-2">
-            {snsClicks.map((sc) => {
-              const platform = sc.link_id.replace("sns:", "");
-              const label = PLATFORM_LABELS[sc.link_id] || platform;
-              const url = socialUrls[platform] || "";
+            {Object.entries(socialUrls).map(([platform, url]) => {
+              const clickData = snsClicks.find((sc) => sc.link_id === `sns:${platform}`);
+              const count = clickData?.count || 0;
+              const label = PLATFORM_LABELS[`sns:${platform}`] || platform;
               return (
-                <div key={sc.link_id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                <div key={platform} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                   <div>
                     <p className="text-xs font-semibold text-gray-800">{label}</p>
                     {url && <a href={url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 hover:underline truncate block max-w-[200px]">{url}</a>}
                   </div>
-                  <span className="text-xs font-bold text-blue-500 shrink-0">클릭 {sc.count}회</span>
+                  <span className={`text-xs font-bold shrink-0 ${count > 0 ? "text-blue-500" : "text-gray-300"}`}>클릭 {count}회</span>
                 </div>
               );
             })}
@@ -352,7 +352,7 @@ export default function AnalyticsTab({ slug, linkLabels, linkUrls, socialUrls }:
         snsClicks.forEach((lc) => lc.daily.forEach((d) => { snsDailyAll[d.date] = (snsDailyAll[d.date] || 0) + d.clicks; }));
         const snsDailySorted = Object.entries(snsDailyAll).sort(([a], [b]) => a.localeCompare(b)).map(([date, clicks]) => ({ date, clicks }));
 
-        if (snsClicks.length === 0) return null;
+        if (Object.keys(socialUrls || {}).length === 0) return null;
         return (
           <SnsClickAccordion
             snsClicks={snsClicks}
@@ -363,12 +363,15 @@ export default function AnalyticsTab({ slug, linkLabels, linkUrls, socialUrls }:
         );
       })()}
 
-      {/* Link Clicks - Accordion */}
-      {data.linkClicks.filter((lc) => !lc.link_id.startsWith("sns:")).length > 0 && (
+      {/* Link Clicks - All blocks shown (even 0 clicks) */}
+      {Object.keys(linkLabels).length > 0 && (
         <div className="flex flex-col gap-2">
-          {data.linkClicks.filter((lc) => !lc.link_id.startsWith("sns:")).map((lc) => (
-            <LinkClickAccordion key={lc.link_id} lc={lc} label={linkLabels[lc.link_id] || lc.link_id.substring(0, 8)} url={linkUrls?.[lc.link_id]} />
-          ))}
+          {Object.entries(linkLabels).map(([linkId, label]) => {
+            const lc = data.linkClicks.find((c) => c.link_id === linkId) || { link_id: linkId, count: 0, daily: [] };
+            return (
+              <LinkClickAccordion key={linkId} lc={lc} label={label} url={linkUrls?.[linkId]} />
+            );
+          })}
         </div>
       )}
     </div>
