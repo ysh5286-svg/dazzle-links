@@ -4,20 +4,25 @@ import { useEffect } from "react";
 
 export default function AnalyticsTracker({ slug }: { slug: string }) {
   useEffect(() => {
-    // iframe 안이면 추적하지 않음 (관리자 미리보기)
     if (window.self !== window.top) return;
 
-    // 페이지 조회 기록
+    // 유입 경로: document.referrer에서 자기 도메인 제외
+    let referer = document.referrer || "";
+    try {
+      const refHost = new URL(referer).hostname;
+      if (refHost === window.location.hostname) referer = "";
+    } catch { /* invalid URL */ }
+
     fetch("/api/analytics", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         page_slug: slug,
         event_type: "view",
+        referer,
       }),
     }).catch(() => {});
 
-    // 링크 클릭 추적 (이벤트 위임)
     function handleClick(e: MouseEvent) {
       const anchor = (e.target as HTMLElement).closest("a[href]") as HTMLAnchorElement | null;
       if (!anchor || !anchor.href || anchor.href.startsWith(window.location.origin)) return;

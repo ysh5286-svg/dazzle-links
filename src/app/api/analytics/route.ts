@@ -3,12 +3,14 @@ import { supabase } from "@/lib/supabase";
 
 // POST: 이벤트 기록 (view 또는 click)
 export async function POST(request: NextRequest) {
-  const { page_slug, link_id, event_type } = await request.json();
+  const body = await request.json();
+  const { page_slug, link_id, event_type } = body;
   if (!page_slug || !event_type) {
     return NextResponse.json({ error: "page_slug and event_type required" }, { status: 400 });
   }
 
-  const referer = request.headers.get("referer") || "";
+  // 클라이언트가 보낸 referer 우선, 없으면 서버 헤더
+  const referer = body.referer || request.headers.get("referer") || "";
   const country = request.headers.get("x-vercel-ip-country") || "";
 
   await supabase.from("analytics").insert({
