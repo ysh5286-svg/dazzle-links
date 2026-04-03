@@ -117,11 +117,101 @@ function AddLinkModal({ onClose, onAdd }: {
   );
 }
 
+// --- Edit Link Modal ---
+function EditLinkModal({ item, onClose, onSave }: {
+  item: GroupLinkRow;
+  onClose: () => void;
+  onSave: (updates: Partial<GroupLinkRow>) => void;
+}) {
+  const [url, setUrl] = useState(item.url);
+  const [label, setLabel] = useState(item.label);
+  const [price, setPrice] = useState(item.price || "");
+  const [originalPrice, setOriginalPrice] = useState(item.original_price || "");
+  const [image, setImage] = useState(item.image || "");
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file?.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = () => setImage(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file?.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = () => setImage(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/30 z-50" onClick={onClose} />
+      <div className="fixed inset-0 flex items-center justify-center z-50 p-4" onClick={onClose}>
+        <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-base font-bold text-gray-900">링크 수정</h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+          </div>
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="text-xs font-medium text-red-400 mb-1 block">연결 URL *</label>
+              <input type="text" value={url} onChange={(e) => setUrl(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-red-400 mb-1 block">대표문구 *</label>
+              <input type="text" value={label} onChange={(e) => setLabel(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="text-xs font-medium text-gray-500 mb-1 block">판매가격</label>
+                <div className="flex items-center"><input type="text" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-l-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /><span className="px-3 py-2.5 bg-gray-100 border border-l-0 border-gray-200 rounded-r-lg text-sm text-gray-500">원</span></div>
+              </div>
+              <div className="flex-1">
+                <label className="text-xs font-medium text-gray-500 mb-1 block">정가</label>
+                <div className="flex items-center"><input type="text" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-l-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /><span className="px-3 py-2.5 bg-gray-100 border border-l-0 border-gray-200 rounded-r-lg text-sm text-gray-500">원</span></div>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">이미지</label>
+              {image ? (
+                <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200">
+                  <img src={image} alt="" className="w-full h-full object-cover" />
+                  <button onClick={() => setImage("")} className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/50 rounded-full text-white text-xs flex items-center justify-center">&times;</button>
+                </div>
+              ) : (
+                <div onDragOver={(e) => e.preventDefault()} onDrop={handleDrop}
+                  className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer border-gray-200 hover:border-gray-400"
+                  onClick={() => document.getElementById("edit-img-input")?.click()}>
+                  <p className="text-xs text-gray-400">이미지를 드래그하거나 클릭</p>
+                  <input id="edit-img-input" type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
+                </div>
+              )}
+              <input type="text" value={image.startsWith("data:") ? "" : image} onChange={(e) => setImage(e.target.value)} placeholder="또는 이미지 URL"
+                className="w-full mt-2 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gray-900" />
+            </div>
+          </div>
+          <div className="flex gap-3 mt-6">
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-200 text-sm rounded-lg hover:bg-gray-50">취소</button>
+            <button type="button" onClick={() => onSave({ url, label, price: price || null, original_price: originalPrice || null, image: image || null })} disabled={!url || !label}
+              className="flex-1 py-2.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 disabled:opacity-50">저장</button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // --- Sortable Group Link Item ---
-function SortableGroupItem({ item, onToggle, onDelete }: {
+function SortableGroupItem({ item, onToggle, onDelete, onEdit }: {
   item: GroupLinkRow;
   onToggle: () => void;
   onDelete: () => void;
+  onEdit: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
@@ -137,28 +227,21 @@ function SortableGroupItem({ item, onToggle, onDelete }: {
         </svg>
       </div>
 
-      {/* Image */}
-      {item.image && (
-        <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
-          <img src={item.image} alt="" className="w-full h-full object-cover" />
-        </div>
-      )}
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p className={`text-xs font-medium truncate ${item.enabled ? "text-gray-800" : "text-gray-300"}`}>{item.label}</p>
-        {item.price && (
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-xs font-bold text-gray-900">{item.price}원</span>
-            {item.original_price && <span className="text-[10px] text-gray-400 line-through">{item.original_price}원</span>}
+      {/* Clickable area for edit */}
+      <button onClick={onEdit} className="flex-1 flex items-center gap-2 text-left min-w-0">
+        {item.image && (
+          <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0">
+            <img src={item.image} alt="" className="w-full h-full object-cover" />
           </div>
         )}
-        <p className="text-[10px] text-gray-400 truncate">{item.url}</p>
-        {/* ON/OFF */}
-        <button onClick={onToggle} className={`mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${item.enabled ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"}`}>
-          {item.enabled ? "ON" : "OFF"}
-        </button>
-      </div>
+        <div className="flex-1 min-w-0">
+          <p className={`text-xs font-semibold truncate ${item.enabled ? "text-gray-800" : "text-gray-300"}`}>{item.label}</p>
+          <p className="text-[10px] text-blue-500 truncate">{item.url}</p>
+          <button onClick={(e) => { e.stopPropagation(); onToggle(); }} className={`mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${item.enabled ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"}`}>
+            {item.enabled ? "ON" : "OFF"}
+          </button>
+        </div>
+      </button>
 
       {/* Delete */}
       <button onClick={onDelete} className="text-gray-300 hover:text-red-500 shrink-0 p-1">
@@ -237,6 +320,7 @@ export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayou
   const [items, setItems] = useState<GroupLinkRow[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [editingItem, setEditingItem] = useState<GroupLinkRow | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -279,6 +363,13 @@ export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayou
     onRefresh();
   }
 
+  async function updateItem(id: string, updates: Partial<GroupLinkRow>) {
+    setItems((prev) => prev.map((i) => i.id === id ? { ...i, ...updates } : i));
+    await fetch("/api/group-links", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...updates }) });
+    setEditingItem(null);
+    onRefresh();
+  }
+
   async function deleteItem(id: string) {
     setItems((prev) => prev.filter((i) => i.id !== id));
     await fetch("/api/group-links", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
@@ -308,6 +399,7 @@ export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayou
       </button>
 
       {showAdd && <AddLinkModal onClose={() => setShowAdd(false)} onAdd={addItem} />}
+      {editingItem && <EditLinkModal item={editingItem} onClose={() => setEditingItem(null)} onSave={(updates) => updateItem(editingItem.id, updates)} />}
 
       {/* Items */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -318,6 +410,7 @@ export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayou
               item={item}
               onToggle={() => toggleItem(item.id, !item.enabled)}
               onDelete={() => deleteItem(item.id)}
+              onEdit={() => setEditingItem(item)}
             />
           ))}
         </SortableContext>
