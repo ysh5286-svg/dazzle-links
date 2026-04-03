@@ -74,7 +74,7 @@ export default function SocialIcons({
   socials: { platform: string; url: string }[];
 }) {
   return (
-    <div className="flex items-center justify-center gap-5">
+    <div className="flex items-center justify-center gap-8">
       {socials.map((s, i) => {
         const Icon = platformIcons[s.platform];
         if (!Icon) return null;
@@ -86,7 +86,7 @@ export default function SocialIcons({
             rel="noopener noreferrer"
             className="hover:scale-125 active:scale-90 transition-all duration-200"
           >
-            <Icon className="w-7 h-7 text-gray-800" />
+            <Icon className="w-8 h-8 text-gray-800" />
           </a>
         );
       })}
