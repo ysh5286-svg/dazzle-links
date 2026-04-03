@@ -22,7 +22,7 @@ const PERIODS = [
 
 const COLORS = ["#f87171", "#fb923c", "#facc15", "#4ade80", "#60a5fa", "#a78bfa"];
 
-function LinkClickAccordion({ lc, label }: { lc: { link_id: string; count: number; daily: { date: string; clicks: number }[] }; label: string }) {
+function LinkClickAccordion({ lc, label, url }: { lc: { link_id: string; count: number; daily: { date: string; clicks: number }[] }; label: string; url?: string }) {
   const [open, setOpen] = useState(false);
   const maxClicks = Math.max(...lc.daily.map((d) => d.clicks), 1);
 
@@ -64,8 +64,13 @@ function LinkClickAccordion({ lc, label }: { lc: { link_id: string; count: numbe
               ))}
             </div>
           </div>
-          <div className="mt-2 text-xs text-gray-500">{label}</div>
-          <div className="text-right text-xs font-bold text-blue-500">클릭 {lc.count}회</div>
+          <div className="flex items-center justify-between mt-2">
+            <div>
+              <p className="text-xs font-semibold text-gray-800">{label}</p>
+              {url && <a href={url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 hover:underline truncate block max-w-[250px]">{url}</a>}
+            </div>
+            <span className="text-xs font-bold text-blue-500 shrink-0">클릭 {lc.count}회</span>
+          </div>
         </div>
       )}
       {open && lc.daily.length === 0 && (
@@ -131,7 +136,7 @@ function SnsClickAccordion({ snsClicks, totalClicks, daily, socialUrls }: {
                 <div key={sc.link_id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                   <div>
                     <p className="text-xs font-semibold text-gray-800">{label}</p>
-                    {url && <p className="text-[10px] text-gray-400 truncate max-w-[200px]">{url}</p>}
+                    {url && <a href={url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 hover:underline truncate block max-w-[200px]">{url}</a>}
                   </div>
                   <span className="text-xs font-bold text-blue-500 shrink-0">클릭 {sc.count}회</span>
                 </div>
@@ -149,7 +154,7 @@ const PLATFORM_LABELS: Record<string, string> = {
   "sns:youtube": "유튜브", "sns:naver": "네이버", "sns:kakaotalk": "카카오톡",
 };
 
-export default function AnalyticsTab({ slug, linkLabels, socialUrls }: { slug: string; linkLabels: Record<string, string>; socialUrls?: Record<string, string> }) {
+export default function AnalyticsTab({ slug, linkLabels, linkUrls, socialUrls }: { slug: string; linkLabels: Record<string, string>; linkUrls?: Record<string, string>; socialUrls?: Record<string, string> }) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [period, setPeriod] = useState("7d");
   const [loading, setLoading] = useState(true);
@@ -362,7 +367,7 @@ export default function AnalyticsTab({ slug, linkLabels, socialUrls }: { slug: s
       {data.linkClicks.filter((lc) => !lc.link_id.startsWith("sns:")).length > 0 && (
         <div className="flex flex-col gap-2">
           {data.linkClicks.filter((lc) => !lc.link_id.startsWith("sns:")).map((lc) => (
-            <LinkClickAccordion key={lc.link_id} lc={lc} label={linkLabels[lc.link_id] || lc.link_id.substring(0, 8)} />
+            <LinkClickAccordion key={lc.link_id} lc={lc} label={linkLabels[lc.link_id] || lc.link_id.substring(0, 8)} url={linkUrls?.[lc.link_id]} />
           ))}
         </div>
       )}
