@@ -38,6 +38,18 @@ export type LinkRow = {
   enabled: boolean;
 };
 
+export type GroupLinkRow = {
+  id: string;
+  link_id: string;
+  label: string;
+  url: string;
+  image: string | null;
+  price: string | null;
+  original_price: string | null;
+  enabled: boolean;
+  sort_order: number;
+};
+
 export type SocialRow = {
   id: string;
   page_id: string;

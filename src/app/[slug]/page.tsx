@@ -10,6 +10,7 @@ import InlineVideo from "./inline-video";
 import VideoCarousel from "./video-carousel";
 import ShareButton from "./share-button";
 import ChatButton from "./chat-button";
+import GroupLinkCard from "./group-link-card";
 
 export const revalidate = 10;
 
@@ -79,6 +80,21 @@ export default async function SlugPage({
   const allLinks = (linksRes.data || []).filter((l: { enabled?: boolean }) => l.enabled !== false);
   const links = allLinks.filter((l: { layout?: string }) => l.layout !== "kakaotalk");
   const socials = socialsRes.data || [];
+
+  // 그룹링크 데이터 가져오기
+  const groupLinkIds = allLinks.filter((l: { layout?: string }) => l.layout === "group").map((l: { id: string }) => l.id);
+  const groupLinksMap: Record<string, Array<{ id: string; label: string; url: string; image: string | null; price: string | null; original_price: string | null; enabled: boolean }>> = {};
+  if (groupLinkIds.length > 0) {
+    const { data: groupData } = await supabase
+      .from("group_links")
+      .select("*")
+      .in("link_id", groupLinkIds)
+      .order("sort_order");
+    for (const item of groupData || []) {
+      if (!groupLinksMap[item.link_id]) groupLinksMap[item.link_id] = [];
+      groupLinksMap[item.link_id].push(item);
+    }
+  }
 
   const bgColor = page.bg_color || "#f9fafb";
   const btnColor = page.btn_color || "#ffffff";
@@ -259,6 +275,16 @@ export default async function SlugPage({
                   <div key={link.id} className="w-full grid grid-cols-2 gap-2">
                     {validUrls.map((u: string, i: number) => <VideoThumb key={i} url={u} />)}
                   </div>
+                );
+              }
+              if (link.layout === "group") {
+                return (
+                  <GroupLinkCard
+                    key={link.id}
+                    label={link.label}
+                    items={groupLinksMap[link.id] || []}
+                    btnClassName="link-btn"
+                  />
                 );
               }
               return (

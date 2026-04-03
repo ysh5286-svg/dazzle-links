@@ -7,6 +7,7 @@ import type { PageRow, LinkRow, SocialRow } from "@/lib/supabase";
 import PageSwitcher from "./page-switcher";
 import DesignTab from "./design-tab";
 import AdminChannelBar from "./admin-channel-bar";
+import GroupLinkEditor from "./group-link-editor";
 import {
   DndContext,
   closestCenter,
@@ -362,6 +363,7 @@ function VideoEditor({ link, onUpdate }: { link: LinkRow; onUpdate: (id: string,
 function BlockAddModal({ onClose, onSelect }: { onClose: () => void; onSelect: (type: string) => void }) {
   const blocks = [
     { type: "link", label: "단일 링크", desc: "하나의 URL 강조", color: "bg-orange-100 text-orange-600", icon: "L" },
+    { type: "group", label: "그룹 링크", desc: "여러 링크 묶음", color: "bg-pink-100 text-pink-600", icon: "G" },
     { type: "kakaotalk", label: "카톡 채팅", desc: "실시간 채팅 버튼", color: "bg-yellow-100 text-yellow-700", icon: "K" },
     { type: "sns", label: "SNS 연결", desc: "소셜 채널 연결", color: "bg-green-100 text-green-600", icon: "S" },
     { type: "spacer", label: "여백", desc: "블럭 간격 조절", color: "bg-purple-100 text-purple-600", icon: "—" },
@@ -445,7 +447,12 @@ function SortableLinkBlock({
 
         {/* Title - clickable to expand */}
         <button onClick={onToggleOpen} className="flex-1 flex items-center gap-2 text-left min-w-0">
-          {link.layout === "kakaotalk" ? (
+          {link.layout === "group" ? (
+            <>
+              <span className="w-5 h-5 rounded bg-pink-100 flex items-center justify-center text-[10px] font-bold text-pink-600 shrink-0">G</span>
+              <span className={`text-sm font-semibold truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>그룹 링크</span>
+            </>
+          ) : link.layout === "kakaotalk" ? (
             <>
               <span className="w-5 h-5 rounded bg-[#FFE812] flex items-center justify-center text-[10px] font-bold text-[#3C1E1E] shrink-0">K</span>
               <span className={`text-sm font-semibold truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>카톡 채팅</span>
@@ -482,7 +489,16 @@ function SortableLinkBlock({
       </div>
 
       {/* Expanded Content */}
-      {isOpen && link.layout === "spacer" ? (
+      {isOpen && link.layout === "group" ? (
+        <div className="px-5 pb-5 flex flex-col gap-3 border-t border-gray-50 pt-4">
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">대표 문구</label>
+            <input type="text" defaultValue={link.label} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
+          </div>
+          <GroupLinkEditor linkId={link.id} onRefresh={() => { /* refreshPreview is called from parent */ }} />
+        </div>
+      ) : isOpen && link.layout === "spacer" ? (
         <SpacerEditor height={parseInt(link.label) || 40} lineStyle={link.url || "none"}
           onChange={(h, ls) => onUpdate(link.id, { label: String(h), url: ls })} />
       ) : isOpen && link.layout === "text" ? (
@@ -677,6 +693,18 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     router.push("/admin");
   }
 
+  async function addGroupBlock() {
+    const data = { label: "그룹 링크", url: "", sort_order: links.length, layout: "group", enabled: true };
+    const temp: LinkRow = { id: tempId(), page_id: page!.id, thumbnail: null, ...data };
+    setLinks((prev) => [...prev, temp]);
+    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    const created = await res.json();
+    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
+    // 자동으로 펼치기
+    if (created?.id) setOpenLinks((prev) => ({ ...prev, [created.id]: true }));
+    refreshPreview();
+  }
+
   async function addKakaoBlock() {
     const data = { label: "카톡 문의/제보", url: "https://pf.kakao.com/", sort_order: links.length, layout: "kakaotalk", enabled: true };
     const temp: LinkRow = { id: tempId(), page_id: page!.id, thumbnail: null, ...data };
@@ -721,6 +749,8 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     setShowBlockModal(false);
     if (type === "link") {
       addLink();
+    } else if (type === "group") {
+      addGroupBlock();
     } else if (type === "kakaotalk") {
       addKakaoBlock();
     } else if (type === "sns") {
