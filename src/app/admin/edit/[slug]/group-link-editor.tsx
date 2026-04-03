@@ -107,8 +107,8 @@ function AddLinkModal({ onClose, onAdd }: {
           </div>
 
           <div className="flex gap-3 mt-6">
-            <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 text-sm rounded-lg hover:bg-gray-50">취소</button>
-            <button onClick={() => { if (canSubmit) onAdd({ url, label, price, original_price: originalPrice, image }); }} disabled={!canSubmit}
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-gray-200 text-sm rounded-lg hover:bg-gray-50">취소</button>
+            <button type="button" onClick={() => onAdd({ url, label, price, original_price: originalPrice, image: image || "" })} disabled={!canSubmit}
               className="flex-1 py-2.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 disabled:opacity-50">생성</button>
           </div>
         </div>
@@ -251,10 +251,23 @@ export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayou
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
   async function addItem(data: { url: string; label: string; price: string; original_price: string; image: string }) {
-    await fetch("/api/group-links", {
+    const payload = {
+      link_id: linkId,
+      label: data.label,
+      url: data.url,
+      image: data.image || null,
+      price: data.price || null,
+      original_price: data.original_price || null,
+      sort_order: items.length,
+    };
+    const res = await fetch("/api/group-links", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, link_id: linkId, sort_order: items.length }),
+      body: JSON.stringify(payload),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error("Group link add failed:", err);
+    }
     setShowAdd(false);
     await fetchItems();
     onRefresh();
