@@ -11,6 +11,7 @@ import VideoCarousel from "./video-carousel";
 import ShareButton from "./share-button";
 import ChatButton from "./chat-button";
 import GroupLinkCard from "./group-link-card";
+import AnalyticsTracker from "./analytics-tracker";
 
 export const revalidate = 10;
 
@@ -116,6 +117,7 @@ export default async function SlugPage({
   return (
     <>
       <DesignPreviewListener />
+      <AnalyticsTracker slug={slug} />
       <style>{`
         body { background: ${bgColor}; font-family: ${fontFamily}; }
         .link-btn {

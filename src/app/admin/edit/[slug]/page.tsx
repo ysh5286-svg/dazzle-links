@@ -7,6 +7,7 @@ import type { PageRow, LinkRow, SocialRow } from "@/lib/supabase";
 import PageSwitcher from "./page-switcher";
 import DesignTab from "./design-tab";
 import AdminChannelBar from "./admin-channel-bar";
+import AnalyticsTab from "./analytics-tab";
 import GroupLinkEditor from "./group-link-editor";
 import {
   DndContext,
@@ -544,7 +545,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [toast, setToast] = useState("");
-  const [activeTab, setActiveTab] = useState<"page" | "design">("page");
+  const [activeTab, setActiveTab] = useState<"page" | "design" | "analytics">("page");
 
   const [openProfile, setOpenProfile] = useState(false);
   const [openSns, setOpenSns] = useState(false);
@@ -847,11 +848,17 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
               className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === "design" ? "border-gray-900 text-gray-900 bg-gray-900 text-white rounded-t-xl" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
               디자인
             </button>
+            <button onClick={() => setActiveTab("analytics")}
+              className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${activeTab === "analytics" ? "border-gray-900 text-gray-900 bg-gray-900 text-white rounded-t-xl" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
+              분석
+            </button>
           </div>
 
           {/* Tab Content */}
           <div className="flex-1 overflow-y-scroll">
-            {activeTab === "design" && page ? (
+            {activeTab === "analytics" ? (
+              <AnalyticsTab slug={slug} linkLabels={Object.fromEntries(links.map((l) => [l.id, l.label]))} />
+            ) : activeTab === "design" && page ? (
               <DesignTab page={page} onSave={async (updates) => {
                 await fetch(`/api/pages/${slug}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updates) });
                 await fetchAll();
