@@ -1,13 +1,28 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+
+// 모듈 레벨: 이전 페이지 slug 기억
+let prevSlug: string | null = null;
 
 export default function AnalyticsTracker({ slug }: { slug: string }) {
+  const isFirst = useRef(true);
+
   useEffect(() => {
     if (window.self !== window.top) return;
 
-    // referer 전체를 그대로 보냄 (서버에서 분류)
-    const referer = document.referrer || "";
+    let referer = "";
+
+    if (prevSlug && prevSlug !== slug) {
+      // 내부 이동: 이전 채널에서 넘어옴
+      referer = `${window.location.origin}/${prevSlug}`;
+    } else if (isFirst.current) {
+      // 첫 접속: document.referrer 사용
+      referer = document.referrer || "";
+    }
+
+    isFirst.current = false;
+    prevSlug = slug;
 
     fetch("/api/analytics", {
       method: "POST",
