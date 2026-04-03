@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import type { PageRow } from "@/lib/supabase";
 import {
   DndContext,
@@ -51,7 +52,7 @@ function SortableChannel({
       {/* Channel info */}
       <button onClick={onClick} className="flex-1 flex items-center gap-3 text-left">
         {page.profile ? (
-          <img src={page.profile} alt={page.title} className="w-9 h-9 rounded-full object-cover" />
+          <Image src={page.profile} alt={page.title} width={36} height={36} className="w-9 h-9 rounded-full object-cover" />
         ) : (
           <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
             {page.title[0]}
@@ -185,7 +186,7 @@ export default function PageSwitcher({
       <button onClick={() => setOpen(!open)}
         className="w-14 h-14 rounded-full shadow-lg border-2 border-white overflow-hidden hover:scale-105 active:scale-95 transition-transform">
         {currentProfile ? (
-          <img src={currentProfile} alt="현재 페이지" className="w-full h-full object-cover" />
+          <Image src={currentProfile} alt="현재 페이지" width={56} height={56} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-gray-900 flex items-center justify-center text-white text-lg font-bold">
             {currentSlug[0]?.toUpperCase() || "+"}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, use, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import type { PageRow, LinkRow, SocialRow } from "@/lib/supabase";
 import PageSwitcher from "./page-switcher";
 import DesignTab from "./design-tab";
@@ -841,7 +842,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
               </button>
               {openProfile && (
                 <div className="px-5 pb-5 flex flex-col gap-3 border-t border-gray-50 pt-4">
-                  {profile && <div className="flex justify-center"><img src={profile} alt="프로필" className="w-20 h-20 rounded-full object-cover" /></div>}
+                  {profile && <div className="flex justify-center"><Image src={profile} alt="프로필" width={80} height={80} className="w-20 h-20 rounded-full object-cover" /></div>}
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">대표문구</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div>
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">상세문구</label><input type="text" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="추가 설명" className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div>
                   <div><label className="text-xs font-medium text-gray-500 mb-1 block">이미지 URL</label><input type="text" value={profile} onChange={(e) => setProfile(e.target.value)} placeholder="https://..." className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" /></div>
