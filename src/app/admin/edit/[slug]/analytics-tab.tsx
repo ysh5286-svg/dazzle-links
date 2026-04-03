@@ -8,6 +8,7 @@ type AnalyticsData = {
   totalClicks: number;
   clickRate: number;
   referers: { name: string; count: number }[];
+  internals: { name: string; count: number }[];
   countries: { name: string; count: number }[];
   linkClicks: { link_id: string; count: number; daily: { date: string; clicks: number }[] }[];
 };
@@ -296,6 +297,21 @@ export default function AnalyticsTab({ slug, linkLabels, linkUrls, socialUrls }:
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Internal Navigation */}
+      {data.internals && data.internals.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <h3 className="text-sm font-semibold text-gray-800 mb-3">내부 이동 (다른 채널에서 유입)</h3>
+          <div className="flex flex-col gap-1.5">
+            {data.internals.map((item, i) => (
+              <div key={i} className="flex items-center justify-between py-1.5">
+                <span className="text-xs text-blue-500">/{item.name}</span>
+                <span className="text-xs font-bold text-gray-600">{item.count}회</span>
+              </div>
+            ))}
           </div>
         </div>
       )}

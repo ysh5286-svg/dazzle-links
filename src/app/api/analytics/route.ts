@@ -75,18 +75,37 @@ export async function GET(request: NextRequest) {
   const totalClicks = rows.filter((e) => e.event_type === "click").length;
   const clickRate = totalViews > 0 ? Math.round((totalClicks / totalViews) * 100) : 0;
 
-  // 유입 채널 (referer 기반)
+  // 자기 도메인 판별
+  const SELF_DOMAINS = ["link.dazzlepeople.com", "dazzle-links-yoon-seonghos-projects.vercel.app", "localhost"];
+  function isSelfDomain(hostname: string) {
+    return SELF_DOMAINS.some((d) => hostname === d || hostname.endsWith("." + d));
+  }
+
+  // 외부 유입 채널
   const refererMap: Record<string, number> = {};
+  // 내부 이동 (자기 도메인 경로)
+  const internalMap: Record<string, number> = {};
   for (const e of rows) {
     if (e.event_type !== "view" || !e.referer) continue;
     try {
-      const host = new URL(e.referer).hostname.replace("www.", "");
-      refererMap[host] = (refererMap[host] || 0) + 1;
+      const url = new URL(e.referer);
+      const host = url.hostname.replace("www.", "");
+      if (isSelfDomain(host)) {
+        // 내부 이동: 경로까지 표시
+        const path = url.pathname.replace(/^\//, "") || "home";
+        internalMap[path] = (internalMap[path] || 0) + 1;
+      } else {
+        refererMap[host] = (refererMap[host] || 0) + 1;
+      }
     } catch { /* ignore */ }
   }
   const referers = Object.entries(refererMap)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
+    .slice(0, 10)
+    .map(([name, count]) => ({ name, count }));
+  const internals = Object.entries(internalMap)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10)
     .map(([name, count]) => ({ name, count }));
 
   // 링크별 클릭수 + 일별 데이터
@@ -133,6 +152,7 @@ export async function GET(request: NextRequest) {
     totalClicks,
     clickRate,
     referers,
+    internals,
     countries,
     linkClicks,
   });
