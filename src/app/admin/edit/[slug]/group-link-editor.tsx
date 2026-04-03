@@ -41,7 +41,7 @@ function AddLinkModal({ onClose, onAdd }: {
     }
   }
 
-  const canSubmit = url && label && image;
+  const canSubmit = url && label;
 
   return (
     <>
@@ -83,7 +83,7 @@ function AddLinkModal({ onClose, onAdd }: {
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-red-400 mb-1 block">이미지 * (드래그앤드롭 또는 URL)</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">이미지 (드래그앤드롭 또는 URL)</label>
               {image ? (
                 <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200">
                   <img src={image} alt="" className="w-full h-full object-cover" />
@@ -170,10 +170,73 @@ function SortableGroupItem({ item, onToggle, onDelete }: {
   );
 }
 
+// --- Layout Selector ---
+const LAYOUTS = [
+  { key: "list", label: "기본 배치", icon: (
+    <svg viewBox="0 0 40 40" className="w-full h-full"><rect x="4" y="8" width="32" height="4" rx="1" fill="currentColor"/><rect x="4" y="18" width="32" height="4" rx="1" fill="currentColor"/><rect x="4" y="28" width="32" height="4" rx="1" fill="currentColor"/></svg>
+  )},
+  { key: "grid2", label: "2열 배치", icon: (
+    <svg viewBox="0 0 40 40" className="w-full h-full"><rect x="3" y="5" width="15" height="13" rx="2" fill="currentColor"/><rect x="22" y="5" width="15" height="13" rx="2" fill="currentColor"/><rect x="3" y="22" width="15" height="13" rx="2" fill="currentColor"/><rect x="22" y="22" width="15" height="13" rx="2" fill="currentColor"/></svg>
+  )},
+  { key: "grid3", label: "3열 배치", icon: (
+    <svg viewBox="0 0 40 40" className="w-full h-full"><rect x="2" y="5" width="10" height="10" rx="1.5" fill="currentColor"/><rect x="15" y="5" width="10" height="10" rx="1.5" fill="currentColor"/><rect x="28" y="5" width="10" height="10" rx="1.5" fill="currentColor"/><rect x="2" y="19" width="10" height="10" rx="1.5" fill="currentColor"/><rect x="15" y="19" width="10" height="10" rx="1.5" fill="currentColor"/><rect x="28" y="19" width="10" height="10" rx="1.5" fill="currentColor"/><rect x="2" y="28" width="10" height="10" rx="1.5" fill="currentColor" opacity="0.3"/><rect x="15" y="28" width="10" height="10" rx="1.5" fill="currentColor" opacity="0.3"/><rect x="28" y="28" width="10" height="10" rx="1.5" fill="currentColor" opacity="0.3"/></svg>
+  )},
+  { key: "carousel1", label: "1 캐러셀", icon: (
+    <svg viewBox="0 0 40 40" className="w-full h-full"><rect x="5" y="6" width="18" height="28" rx="2" fill="currentColor"/><rect x="27" y="10" width="10" height="20" rx="2" fill="currentColor" opacity="0.3"/></svg>
+  )},
+  { key: "carousel2", label: "2 캐러셀", icon: (
+    <svg viewBox="0 0 40 40" className="w-full h-full"><rect x="3" y="8" width="14" height="24" rx="2" fill="currentColor"/><rect x="20" y="8" width="14" height="24" rx="2" fill="currentColor"/><rect x="36" y="12" width="4" height="16" rx="1" fill="currentColor" opacity="0.3"/></svg>
+  )},
+];
+
+function GroupLayoutSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <p className="text-xs font-medium text-gray-500 mb-2">레이아웃</p>
+      <div className="flex gap-2">
+        {LAYOUTS.map((l) => (
+          <button key={l.key} onClick={() => onChange(l.key)}
+            className={`flex-1 flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl border-2 transition-all ${
+              value === l.key ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 text-gray-400 hover:border-gray-400"
+            }`}>
+            <div className="w-10 h-10">{l.icon}</div>
+            <span className="text-[9px] font-medium">{l.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ListModeSelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <p className="text-xs font-medium text-gray-500 mb-2">링크 나열</p>
+      <div className="flex gap-2">
+        <button onClick={() => onChange("all")}
+          className={`flex-1 py-2.5 text-xs font-medium rounded-xl border-2 transition-all ${
+            value === "all" ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 text-gray-500"
+          }`}>전부 나열</button>
+        <button onClick={() => onChange("fold")}
+          className={`flex-1 py-2.5 text-xs font-medium rounded-xl border-2 transition-all ${
+            value === "fold" ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 text-gray-500"
+          }`}>접기 적용</button>
+      </div>
+    </div>
+  );
+}
+
 // --- Main Editor ---
-export default function GroupLinkEditor({ linkId, onRefresh }: { linkId: string; onRefresh: () => void }) {
+export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayoutChange, onRefresh }: {
+  linkId: string;
+  groupLayout: string;
+  listMode: string;
+  onLayoutChange: (layout: string, mode: string) => void;
+  onRefresh: () => void;
+}) {
   const [items, setItems] = useState<GroupLinkRow[]>([]);
   const [showAdd, setShowAdd] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -249,6 +312,18 @@ export default function GroupLinkEditor({ linkId, onRefresh }: { linkId: string;
 
       {items.length === 0 && (
         <p className="text-xs text-gray-300 text-center py-4">등록된 링크가 없습니다</p>
+      )}
+
+      {/* Options toggle */}
+      <button onClick={() => setShowOptions(!showOptions)} className="self-end text-xs text-gray-500 hover:text-gray-700 font-medium">
+        {showOptions ? "옵션 접기 ∧" : "옵션 보기 ∨"}
+      </button>
+
+      {showOptions && (
+        <div className="flex flex-col gap-4 pt-2 border-t border-gray-100">
+          <GroupLayoutSelector value={groupLayout} onChange={(v) => onLayoutChange(v, listMode)} />
+          <ListModeSelector value={listMode} onChange={(v) => onLayoutChange(groupLayout, v)} />
+        </div>
       )}
     </div>
   );

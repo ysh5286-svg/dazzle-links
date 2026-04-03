@@ -286,6 +286,7 @@ export default async function SlugPage({
                     label={link.label}
                     items={groupLinksMap[link.id] || []}
                     btnClassName="link-btn"
+                    layoutConfig={link.thumbnail}
                   />
                 );
               }

@@ -497,7 +497,11 @@ function SortableLinkBlock({
             <input type="text" defaultValue={link.label} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
           </div>
-          <GroupLinkEditor linkId={link.id} onRefresh={() => { /* refreshPreview is called from parent */ }} />
+          <GroupLinkEditor linkId={link.id}
+            groupLayout={(() => { try { return JSON.parse(link.thumbnail || "{}").layout || "grid3"; } catch { return "grid3"; } })()}
+            listMode={(() => { try { return JSON.parse(link.thumbnail || "{}").listMode || "all"; } catch { return "all"; } })()}
+            onLayoutChange={(layout, mode) => onUpdate(link.id, { thumbnail: JSON.stringify({ layout, listMode: mode }) })}
+            onRefresh={() => {}} />
         </div>
       ) : isOpen && link.layout === "spacer" ? (
         <SpacerEditor height={parseInt(link.label) || 40} lineStyle={link.url || "none"}
