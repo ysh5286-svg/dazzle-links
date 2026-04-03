@@ -8,6 +8,7 @@ type AnalyticsData = {
   totalClicks: number;
   clickRate: number;
   referers: { name: string; count: number }[];
+  countries: { name: string; count: number }[];
   linkClicks: { link_id: string; count: number }[];
 };
 
@@ -150,13 +151,57 @@ export default function AnalyticsTab({ slug, linkLabels }: { slug: string; linkL
                 <div key={i} className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                   <span className="text-xs text-gray-600">{r.count}</span>
-                  <span className="text-xs text-blue-500">{r.name}</span>
+                  <a href={`https://${r.name}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">{r.name}</a>
                 </div>
               ))}
             </div>
           </div>
         </div>
       )}
+
+      {/* Country Donut Chart */}
+      {data.countries && data.countries.length > 0 && (() => {
+        const totalCountries = data.countries.reduce((s, c) => s + c.count, 0);
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-800">유입 국가</h3>
+              <span className="text-[10px] text-gray-400">TOP5</span>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="relative w-28 h-28 shrink-0">
+                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                  {(() => {
+                    let offset = 0;
+                    return data.countries.map((c, i) => {
+                      const pct = (c.count / totalCountries) * 100;
+                      const dash = `${pct * 2.51} ${251 - pct * 2.51}`;
+                      const el = (
+                        <circle key={i} cx="50" cy="50" r="40" fill="none" stroke={COLORS[i % COLORS.length]}
+                          strokeWidth="18" strokeDasharray={dash} strokeDashoffset={-offset * 2.51} />
+                      );
+                      offset += pct;
+                      return el;
+                    });
+                  })()}
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-[10px] font-bold text-gray-500">{Math.round((data.countries[0]?.count || 0) / totalCountries * 100)}%</span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {data.countries.map((c, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                    <span className="text-xs text-gray-600">{c.count}</span>
+                    <span className="text-xs text-gray-800">{c.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Link Clicks */}
       {data.linkClicks.length > 0 && (

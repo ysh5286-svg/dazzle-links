@@ -9,12 +9,14 @@ export async function POST(request: NextRequest) {
   }
 
   const referer = request.headers.get("referer") || "";
+  const country = request.headers.get("x-vercel-ip-country") || "";
 
   await supabase.from("analytics").insert({
     page_slug,
     link_id: link_id || null,
     event_type,
     referer,
+    country,
   });
 
   return NextResponse.json({ ok: true });
@@ -96,12 +98,30 @@ export async function GET(request: NextRequest) {
     .sort(([, a], [, b]) => b - a)
     .map(([link_id, count]) => ({ link_id, count }));
 
+  // 유입 국가
+  const COUNTRY_NAMES: Record<string, string> = {
+    KR: "대한민국", US: "미국", JP: "일본", CN: "중국", TW: "대만",
+    HK: "홍콩", SG: "싱가포르", TH: "태국", VN: "베트남", PH: "필리핀",
+    ID: "인도네시아", MY: "말레이시아", IN: "인도", AU: "호주", CA: "캐나다",
+    GB: "영국", DE: "독일", FR: "프랑스", IT: "이탈리아", ES: "스페인",
+  };
+  const countryMap: Record<string, number> = {};
+  for (const e of rows) {
+    if (e.event_type !== "view" || !e.country) continue;
+    countryMap[e.country] = (countryMap[e.country] || 0) + 1;
+  }
+  const countries = Object.entries(countryMap)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([code, count]) => ({ name: COUNTRY_NAMES[code] || code, count }));
+
   return NextResponse.json({
     daily,
     totalViews,
     totalClicks,
     clickRate,
     referers,
+    countries,
     linkClicks,
   });
 }
