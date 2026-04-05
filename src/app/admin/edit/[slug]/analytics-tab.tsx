@@ -52,40 +52,38 @@ function DailyChart({ daily, maxY }: { daily: { date: string; views: number; cli
           {/* Clicks line (blue) */}
           <polyline fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
             points={daily.map((d, i) => `${10 + i * spacing},${padTop + plotH - (d.clicks / maxY) * plotH}`).join(" ")} />
-          {/* Dots + hover areas */}
+          {/* Dots + hover areas + tooltips */}
           {daily.map((d, i) => {
             const x = 10 + i * spacing;
             const yV = padTop + plotH - (d.views / maxY) * plotH;
             const yC = padTop + plotH - (d.clicks / maxY) * plotH;
+            const isFirst = i === 0;
+            const isLast = i === len - 1;
+            // 툴팁 위치: 맨왼쪽→오른쪽, 맨오른쪽→왼쪽, 나머지→오른쪽
+            const tooltipX = isLast ? x - 125 : x + 12;
+            const tooltipY = Math.min(yV, yC) - 10;
             return (
               <g key={i}
                 onMouseEnter={() => setHover(i)}
                 onMouseLeave={() => setHover(null)}>
-                {/* Invisible wider hit area */}
                 <rect x={x - 20} y={0} width={40} height={chartH} fill="transparent" />
-                {/* Vertical indicator line on hover */}
                 {hover === i && <line x1={x} y1={padTop} x2={x} y2={padTop + plotH} stroke="#d1d5db" strokeWidth="1" strokeDasharray="4" />}
                 <circle cx={x} cy={yV} r={hover === i ? 6 : 4} fill="#ef4444" className="transition-all duration-100" />
                 <circle cx={x} cy={yC} r={hover === i ? 6 : 4} fill="#3b82f6" className="transition-all duration-100" />
+                {hover === i && (
+                  <foreignObject x={tooltipX} y={Math.max(tooltipY, 0)} width="120" height="70" className="pointer-events-none overflow-visible">
+                    <div className="bg-gray-900 text-white rounded-lg px-2.5 py-2 shadow-lg text-[11px] whitespace-nowrap">
+                      <p className="font-semibold mb-1">{d.date}</p>
+                      <p className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-blue-500 inline-block" />클릭수: {d.clicks}</p>
+                      <p className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-red-500 inline-block" />조회수: {d.views}</p>
+                    </div>
+                  </foreignObject>
+                )}
               </g>
             );
           })}
         </svg>
       </div>
-      {/* Tooltip */}
-      {hover !== null && (() => {
-        const d = daily[hover];
-        const xPct = len > 1 ? (hover / (len - 1)) * 100 : 50;
-        return (
-          <div className="absolute pointer-events-none" style={{ left: `calc(32px + ${xPct}%)`, top: "0px", transform: "translateX(-50%)" }}>
-            <div className="bg-gray-900 text-white rounded-lg px-3 py-2 shadow-lg text-[11px] whitespace-nowrap">
-              <p className="font-semibold mb-1">{d.date}</p>
-              <p className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-blue-500 inline-block" />클릭수: {d.clicks}</p>
-              <p className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-red-500 inline-block" />조회수: {d.views}</p>
-            </div>
-          </div>
-        );
-      })()}
       {/* X axis labels - every 2 days */}
       <div className="ml-8 flex justify-between text-[10px] text-gray-400 mt-1" style={{ width: "calc(100% - 32px)" }}>
         {daily.filter((_, i) => i % 2 === 0).map((d) => (
