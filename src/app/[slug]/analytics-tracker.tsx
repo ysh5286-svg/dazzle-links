@@ -17,8 +17,19 @@ export default function AnalyticsTracker({ slug }: { slug: string }) {
       // 내부 이동: 이전 채널에서 넘어옴
       referer = `${window.location.origin}/${prevSlug}`;
     } else if (isFirst.current) {
-      // 첫 접속: document.referrer 사용
-      referer = document.referrer || "";
+      // 첫 접속: document.referrer 사용 (자기 자신 제외)
+      const ref = document.referrer || "";
+      try {
+        const refUrl = new URL(ref);
+        const refPath = refUrl.pathname.replace(/^\//, "");
+        if (refPath === slug) {
+          referer = ""; // 자기 자신이면 무시 (새로고침)
+        } else {
+          referer = ref;
+        }
+      } catch {
+        referer = ref;
+      }
     }
 
     isFirst.current = false;
