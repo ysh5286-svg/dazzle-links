@@ -170,7 +170,7 @@ export default async function SlugPage({
         );
       })()}
 
-      <main className="w-full max-w-[480px] mx-auto px-5 pt-4 pb-10 flex flex-col items-center gap-8 relative">
+      <main className="w-full max-w-[480px] mx-auto px-5 pt-4 pb-10 flex flex-col items-center gap-4 relative">
         {/* Share Button */}
         <ShareButton />
 
@@ -276,7 +276,7 @@ export default async function SlugPage({
 
                 if (videoLayout === "single") {
                   return (
-                    <div key={link.id} className="w-full flex flex-col gap-3">
+                    <div key={link.id} className="w-full flex flex-col gap-2">
                       {validUrls.map((u: string, i: number) => <VideoThumb key={i} url={u} />)}
                     </div>
                   );
