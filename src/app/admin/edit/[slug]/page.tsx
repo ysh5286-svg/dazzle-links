@@ -368,6 +368,7 @@ function BlockAddModal({ onClose, onSelect }: { onClose: () => void; onSelect: (
     { type: "kakaotalk", label: "카톡 채팅", desc: "실시간 채팅 버튼", color: "bg-yellow-100 text-yellow-700", icon: "K" },
     { type: "sns", label: "SNS 연결", desc: "소셜 채널 연결", color: "bg-green-100 text-green-600", icon: "S" },
     { type: "spacer", label: "여백", desc: "블럭 간격 조절", color: "bg-purple-100 text-purple-600", icon: "—" },
+    { type: "search", label: "검색", desc: "페이지내부 검색", color: "bg-gray-200 text-gray-600", icon: "Q" },
     { type: "text", label: "텍스트", desc: "글 작성", color: "bg-blue-100 text-blue-600", icon: "T" },
     { type: "video", label: "동영상", desc: "유튜브 영상 임베드", color: "bg-red-100 text-red-600", icon: "▶" },
   ];
