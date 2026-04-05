@@ -365,7 +365,7 @@ function BlockAddModal({ onClose, onSelect }: { onClose: () => void; onSelect: (
   const blocks = [
     { type: "link", label: "단일 링크", desc: "하나의 URL 강조", color: "bg-orange-100 text-orange-600", icon: "L" },
     { type: "group", label: "그룹 링크", desc: "여러 링크 묶음", color: "bg-pink-100 text-pink-600", icon: "G" },
-    { type: "kakaotalk", label: "카톡 채팅", desc: "실시간 채팅 버튼", color: "bg-yellow-100 text-yellow-700", icon: "K" },
+    { type: "kakaotalk", label: "문의 링크", desc: "카톡/네이버/웹 문의", color: "bg-yellow-100 text-yellow-700", icon: "C" },
     { type: "sns", label: "SNS 연결", desc: "소셜 채널 연결", color: "bg-green-100 text-green-600", icon: "S" },
     { type: "spacer", label: "여백", desc: "블럭 간격 조절", color: "bg-purple-100 text-purple-600", icon: "—" },
     { type: "search", label: "검색", desc: "페이지내부 검색", color: "bg-gray-200 text-gray-600", icon: "Q" },
@@ -462,8 +462,8 @@ function SortableLinkBlock({
             </>
           ) : link.layout === "kakaotalk" ? (
             <>
-              <span className="w-5 h-5 rounded bg-[#FFE812] flex items-center justify-center text-[10px] font-bold text-[#3C1E1E] shrink-0">K</span>
-              <span className={`text-sm font-semibold truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>카톡 채팅</span>
+              <span className="w-5 h-5 rounded bg-yellow-100 flex items-center justify-center text-[10px] font-bold text-yellow-700 shrink-0">C</span>
+              <span className={`text-sm font-semibold truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>문의 링크</span>
             </>
           ) : link.layout === "spacer" ? (
             <>
@@ -518,6 +518,64 @@ function SortableLinkBlock({
             listMode={(() => { try { return JSON.parse(link.thumbnail || "{}").listMode || "all"; } catch { return "all"; } })()}
             onLayoutChange={(layout, mode) => onUpdate(link.id, { thumbnail: JSON.stringify({ layout, listMode: mode }) })}
             onRefresh={onRefreshPreview} />
+        </div>
+      ) : isOpen && link.layout === "kakaotalk" ? (
+        <div className="px-5 pb-5 flex flex-col gap-3 border-t border-gray-50 pt-4">
+          <div>
+            <label className="text-xs font-medium text-red-400 mb-1 block">연결 URL *</label>
+            <input type="text" defaultValue={link.url} onBlur={(e) => onUpdate(link.id, { url: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">버튼 문구</label>
+            <input type="text" defaultValue={link.label} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-2 block">플랫폼</label>
+            <div className="flex gap-2">
+              {(() => {
+                const config = (() => { try { return JSON.parse(link.thumbnail || "{}"); } catch { return {}; } })();
+                const currentPlatform = config.platform || "kakao";
+                const currentPos = config.position || "bottom-right";
+                const updateConfig = (updates: Record<string, string>) => onUpdate(link.id, { thumbnail: JSON.stringify({ ...config, ...updates }) });
+                return (
+                  <>
+                    {[
+                      { key: "kakao", label: "카카오톡", color: "bg-[#FFE812] text-[#3C1E1E]" },
+                      { key: "naver", label: "네이버톡톡", color: "bg-[#03C75A] text-white" },
+                      { key: "web", label: "웹사이트", color: "bg-gray-100 text-gray-700" },
+                    ].map((p) => (
+                      <button key={p.key} onClick={() => updateConfig({ platform: p.key })}
+                        className={`flex-1 py-2.5 rounded-xl text-xs font-medium border-2 transition-all ${currentPlatform === p.key ? "border-gray-900 " + p.color : "border-gray-200 text-gray-400"}`}>
+                        {p.label}
+                      </button>
+                    ))}
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-2 block">버튼 위치</label>
+            <div className="flex gap-2">
+              {(() => {
+                const config = (() => { try { return JSON.parse(link.thumbnail || "{}"); } catch { return {}; } })();
+                const currentPos = config.position || "bottom-right";
+                const updateConfig = (updates: Record<string, string>) => onUpdate(link.id, { thumbnail: JSON.stringify({ ...config, ...updates }) });
+                return [
+                  { key: "bottom-right", label: "우측 하단" },
+                  { key: "bottom-left", label: "좌측 하단" },
+                  { key: "top-right", label: "우측 상단" },
+                ].map((pos) => (
+                  <button key={pos.key} onClick={() => updateConfig({ position: pos.key })}
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-medium border-2 transition-all ${currentPos === pos.key ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 text-gray-500"}`}>
+                    {pos.label}
+                  </button>
+                ));
+              })()}
+            </div>
+          </div>
         </div>
       ) : isOpen && link.layout === "spacer" ? (
         <SpacerEditor height={parseInt(link.label) || 40} lineStyle={link.url || "none"}
@@ -890,7 +948,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
           <div className="flex-1 overflow-y-scroll">
             {activeTab === "analytics" ? (
               <AnalyticsTab slug={slug}
-                linkLabels={{...Object.fromEntries(links.filter(l => l.layout !== "kakaotalk").map((l) => [l.id, l.label])), ...(links.some(l => l.layout === "kakaotalk") ? {"kakaotalk-chat": "카톡 문의"} : {})}}
+                linkLabels={{...Object.fromEntries(links.filter(l => l.layout !== "kakaotalk").map((l) => [l.id, l.label])), ...(links.some(l => l.layout === "kakaotalk") ? {"kakaotalk-chat": links.find(l => l.layout === "kakaotalk")?.label || "문의 링크"} : {})}}
                 linkUrls={{...Object.fromEntries(links.filter(l => l.layout !== "kakaotalk").map((l) => [l.id, l.url])), ...(links.some(l => l.layout === "kakaotalk") ? {"kakaotalk-chat": links.find(l => l.layout === "kakaotalk")?.url || ""} : {})}}
                 socialUrls={Object.fromEntries(socials.map((s) => [s.platform, s.url]))} />
             ) : activeTab === "design" && page ? (
