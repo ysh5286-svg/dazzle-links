@@ -450,7 +450,12 @@ function SortableLinkBlock({
 
         {/* Title - clickable to expand */}
         <button onClick={onToggleOpen} className="flex-1 flex items-center gap-2 text-left min-w-0">
-          {link.layout === "group" ? (
+          {link.layout === "search" ? (
+            <>
+              <span className="w-5 h-5 rounded bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600 shrink-0">Q</span>
+              <span className={`text-sm font-semibold truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>검색</span>
+            </>
+          ) : link.layout === "group" ? (
             <>
               <span className="w-5 h-5 rounded bg-pink-100 flex items-center justify-center text-[10px] font-bold text-pink-600 shrink-0">G</span>
               <span className={`text-sm font-semibold truncate ${link.enabled ? "text-gray-800" : "text-gray-300"}`}>그룹 링크</span>
@@ -492,7 +497,16 @@ function SortableLinkBlock({
       </div>
 
       {/* Expanded Content */}
-      {isOpen && link.layout === "group" ? (
+      {isOpen && link.layout === "search" ? (
+        <div className="px-5 pb-5 flex flex-col gap-3 border-t border-gray-50 pt-4">
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">가이드 문구</label>
+            <input type="text" defaultValue={link.label || "검색"} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
+              placeholder="검색창 내부에 문구 노출 (미입력시 '검색')"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
+          </div>
+        </div>
+      ) : isOpen && link.layout === "group" ? (
         <div className="px-5 pb-5 flex flex-col gap-3 border-t border-gray-50 pt-4">
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">대표 문구</label>
@@ -712,6 +726,16 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     refreshPreview();
   }
 
+  async function addSearchBlock() {
+    const data = { label: "검색", url: "", sort_order: links.length, layout: "search", enabled: true };
+    const temp: LinkRow = { id: tempId(), page_id: page!.id, thumbnail: null, ...data };
+    setLinks((prev) => [...prev, temp]);
+    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+    const created = await res.json();
+    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
+    refreshPreview();
+  }
+
   async function addKakaoBlock() {
     const data = { label: "카톡 문의/제보", url: "https://pf.kakao.com/", sort_order: links.length, layout: "kakaotalk", enabled: true };
     const temp: LinkRow = { id: tempId(), page_id: page!.id, thumbnail: null, ...data };
@@ -763,6 +787,8 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     } else if (type === "sns") {
       addSocial();
       setOpenSns(true);
+    } else if (type === "search") {
+      addSearchBlock();
     } else if (type === "spacer") {
       addSpacer();
     } else if (type === "text") {

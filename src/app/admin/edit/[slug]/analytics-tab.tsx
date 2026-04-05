@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 type AnalyticsData = {
   daily: { date: string; views: number; clicks: number }[];
@@ -25,6 +25,8 @@ const COLORS = ["#f87171", "#fb923c", "#facc15", "#4ade80", "#60a5fa", "#a78bfa"
 
 function DailyChart({ daily, maxY }: { daily: { date: string; views: number; clicks: number }[]; maxY: number }) {
   const [hover, setHover] = useState<number | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const chartRef = useRef<HTMLDivElement>(null);
   const len = daily.length;
   const spacing = 80;
   const chartW = Math.max(len - 1, 1) * spacing + 20;
@@ -33,7 +35,12 @@ function DailyChart({ daily, maxY }: { daily: { date: string; views: number; cli
   const plotH = chartH - padTop - 10;
 
   return (
-    <div className="relative" style={{ height: "220px", overflow: "visible" }}>
+    <div ref={chartRef} className="relative" style={{ height: "220px", overflow: "visible" }}
+      onMouseMove={(e) => {
+        if (!chartRef.current) return;
+        const rect = chartRef.current.getBoundingClientRect();
+        setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      }}>
       <div className="absolute left-0 top-2 bottom-8 w-8 flex flex-col justify-between text-[10px] text-gray-400">
         <span>{maxY}</span>
         <span>{Math.round(maxY / 2)}</span>
@@ -57,13 +64,6 @@ function DailyChart({ daily, maxY }: { daily: { date: string; views: number; cli
             const x = 10 + i * spacing;
             const yV = padTop + plotH - (d.views / maxY) * plotH;
             const yC = padTop + plotH - (d.clicks / maxY) * plotH;
-            const isFirst = i === 0;
-            const isLast = i === len - 1;
-            // 툴팁 위치: 맨오른쪽→왼쪽, 나머지→오른쪽. 점 위에 표시
-            const tw = 140;
-            const th = 80;
-            const tooltipX = isLast ? x - tw - 10 : x + 10;
-            const tooltipY = Math.min(yV, yC) - th + 10;
             return (
               <g key={i}
                 onMouseEnter={() => setHover(i)}
@@ -72,20 +72,24 @@ function DailyChart({ daily, maxY }: { daily: { date: string; views: number; cli
                 {hover === i && <line x1={x} y1={padTop} x2={x} y2={padTop + plotH} stroke="#d1d5db" strokeWidth="1" strokeDasharray="4" />}
                 <circle cx={x} cy={yV} r={hover === i ? 6 : 4} fill="#ef4444" className="transition-all duration-100" />
                 <circle cx={x} cy={yC} r={hover === i ? 6 : 4} fill="#3b82f6" className="transition-all duration-100" />
-                {hover === i && (
-                  <foreignObject x={tooltipX} y={Math.max(tooltipY, -20)} width={tw} height={th} className="pointer-events-none" style={{ overflow: "visible" }}>
-                    <div className="bg-gray-900 text-white rounded-lg px-2.5 py-2 shadow-lg text-[11px] whitespace-nowrap">
-                      <p className="font-semibold mb-1">{d.date}</p>
-                      <p className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-blue-500 inline-block" />클릭수: {d.clicks}</p>
-                      <p className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-red-500 inline-block" />조회수: {d.views}</p>
-                    </div>
-                  </foreignObject>
-                )}
               </g>
             );
           })}
         </svg>
       </div>
+      {/* Mouse-follow tooltip */}
+      {hover !== null && (
+        <div className="absolute pointer-events-none z-20" style={{
+          left: `${mousePos.x + 12}px`,
+          top: `${mousePos.y - 10}px`,
+        }}>
+          <div className="bg-gray-900 text-white rounded-lg px-3 py-2 shadow-lg text-[11px] whitespace-nowrap">
+            <p className="font-semibold mb-1">{daily[hover].date}</p>
+            <p className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-blue-500 inline-block" />클릭수: {daily[hover].clicks}</p>
+            <p className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-red-500 inline-block" />조회수: {daily[hover].views}</p>
+          </div>
+        </div>
+      )}
       {/* X axis labels - every 2 days */}
       <div className="ml-8 flex justify-between text-[10px] text-gray-400 mt-1" style={{ width: "calc(100% - 32px)" }}>
         {daily.filter((_, i) => i % 2 === 0).map((d) => (

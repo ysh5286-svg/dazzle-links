@@ -12,6 +12,7 @@ import ShareButton from "./share-button";
 import ChatButton from "./chat-button";
 import GroupLinkCard from "./group-link-card";
 import AnalyticsTracker from "./analytics-tracker";
+import LinkListWithSearch from "./link-list-with-search";
 
 export const revalidate = 10;
 
@@ -197,9 +198,12 @@ export default async function SlugPage({
         {socials.length > 0 && <SocialIcons socials={socials} />}
 
         {/* Link Cards */}
-        {links.length > 0 && (
-          <div className="w-full flex flex-col gap-3">
-            {links.map((link) => {
+        {links.length > 0 && (() => {
+          const searchBlock = links.find((l: { layout?: string }) => l.layout === "search");
+          const visibleLinks = links.filter((l: { layout?: string }) => l.layout !== "search");
+          return (
+          <LinkListWithSearch searchPlaceholder={searchBlock ? (searchBlock.label || "검색") : undefined}>
+            {visibleLinks.map((link) => {
               if (link.layout === "spacer") {
                 const h = parseInt(link.label) || 40;
                 const ls = link.url || "none";
@@ -281,28 +285,31 @@ export default async function SlugPage({
               }
               if (link.layout === "group") {
                 return (
-                  <GroupLinkCard
-                    key={link.id}
-                    label={link.label}
-                    items={groupLinksMap[link.id] || []}
-                    btnClassName="link-btn"
-                    layoutConfig={link.thumbnail}
-                  />
+                  <div key={link.id} data-search-label={link.label}>
+                    <GroupLinkCard
+                      label={link.label}
+                      items={groupLinksMap[link.id] || []}
+                      btnClassName="link-btn"
+                      layoutConfig={link.thumbnail}
+                    />
+                  </div>
                 );
               }
               return (
-                <LinkButton
-                  key={link.id}
-                  label={link.label}
-                  url={link.url}
-                  thumbnail={link.thumbnail}
-                  layout={link.layout}
-                  btnClassName="link-btn"
-                />
+                <div key={link.id} data-search-label={link.label}>
+                  <LinkButton
+                    label={link.label}
+                    url={link.url}
+                    thumbnail={link.thumbnail}
+                    layout={link.layout}
+                    btnClassName="link-btn"
+                  />
+                </div>
               );
             })}
-          </div>
-        )}
+          </LinkListWithSearch>
+          );
+        })()}
 
         {/* Homepage Link */}
         <a href="https://dazzlepeople.com/default/" target="_blank" rel="noopener noreferrer"
