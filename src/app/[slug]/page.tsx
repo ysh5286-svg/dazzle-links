@@ -285,7 +285,7 @@ export default async function SlugPage({
               }
               if (link.layout === "group") {
                 return (
-                  <div key={link.id} data-search-label={link.label} data-link-id={link.id}>
+                  <div key={link.id} data-search-label={link.label} data-link-id={link.id} className="w-full">
                     <GroupLinkCard
                       label={link.label}
                       items={groupLinksMap[link.id] || []}
@@ -296,7 +296,7 @@ export default async function SlugPage({
                 );
               }
               return (
-                <div key={link.id} data-search-label={link.label} data-link-id={link.id}>
+                <div key={link.id} data-search-label={link.label} data-link-id={link.id} className="w-full">
                   <LinkButton
                     label={link.label}
                     url={link.url}
