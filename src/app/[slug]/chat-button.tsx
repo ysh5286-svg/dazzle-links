@@ -11,6 +11,7 @@ export default function ChatButton({ url, label }: { url?: string; label?: strin
         href={url}
         target="_blank"
         rel="noopener noreferrer"
+        data-link-id="kakaotalk-chat"
         className="absolute bottom-0 right-4 pointer-events-auto flex items-center gap-2 bg-[#FFE812] pl-4 pr-2 py-2 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-transform"
       >
         <span className="text-[#3C1E1E] text-xs font-bold whitespace-nowrap">{text}</span>
