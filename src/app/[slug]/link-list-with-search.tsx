@@ -27,7 +27,7 @@ export default function LinkListWithSearch({
     : Children.toArray(children);
 
   return (
-    <div className="w-full flex flex-col gap-3">
+    <div className="w-full flex flex-col gap-2">
       <SearchBlock placeholder={searchPlaceholder || "검색"} onSearch={setQuery} />
       {filtered.length > 0 ? filtered : (
         q ? <p className="text-xs text-gray-400 text-center py-6">검색 결과가 없습니다</p> : null
