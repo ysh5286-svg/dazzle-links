@@ -26,7 +26,7 @@ export default function LinkButton({
             <Image src={thumbnail} alt={label} width={480} height={160} className="w-full h-full object-cover" />
           </div>
         )}
-        <div className="px-4 py-3">
+        <div className="px-4 py-3 text-center">
           <span className="text-[15px] font-medium text-gray-800">{label}</span>
         </div>
       </a>
@@ -46,7 +46,7 @@ export default function LinkButton({
             <LinkIcon className="w-7 h-7 text-gray-400" />
           </div>
         )}
-        <span className="flex-1 text-[15px] font-medium text-gray-800 leading-snug">{label}</span>
+        <span className="flex-1 text-[15px] font-medium text-gray-800 leading-snug text-center">{label}</span>
       </a>
     );
   }
@@ -59,12 +59,8 @@ export default function LinkButton({
         <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
           <Image src={thumbnail} alt={label} width={56} height={56} className="w-full h-full object-cover" />
         </div>
-      ) : (
-        <div className="w-14 h-14 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
-          <LinkIcon className="w-6 h-6 text-gray-400" />
-        </div>
-      )}
-      <span className="flex-1 text-[15px] font-medium text-gray-800 leading-snug">{label}</span>
+      ) : null}
+      <span className="flex-1 text-[15px] font-medium text-gray-800 leading-snug text-center">{label}</span>
     </a>
   );
 }
