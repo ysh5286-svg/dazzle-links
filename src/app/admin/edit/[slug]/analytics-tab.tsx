@@ -196,42 +196,52 @@ export default function AnalyticsTab({ slug, linkLabels, linkUrls, socialUrls }:
           <span className="flex items-center gap-1.5 text-xs text-gray-500"><span className="w-3 h-0.5 bg-blue-500 rounded" />클릭수</span>
           <span className="flex items-center gap-1.5 text-xs text-gray-500"><span className="w-3 h-0.5 bg-red-400 rounded" />조회수</span>
         </div>
-        {data.daily.length > 0 ? (
-          <div className="relative h-40">
-            {/* Y axis labels */}
-            <div className="absolute left-0 top-0 bottom-4 w-8 flex flex-col justify-between text-[10px] text-gray-400">
-              <span>{maxY}</span>
-              <span>{Math.round(maxY / 2)}</span>
-              <span>0</span>
+        {data.daily.length > 0 ? (() => {
+          const len = data.daily.length;
+          const chartW = Math.max(len - 1, 1) * 60;
+          return (
+            <div className="relative h-44">
+              {/* Y axis labels */}
+              <div className="absolute left-0 top-0 bottom-6 w-8 flex flex-col justify-between text-[10px] text-gray-400">
+                <span>{maxY}</span>
+                <span>{Math.round(maxY / 2)}</span>
+                <span>0</span>
+              </div>
+              {/* Chart area */}
+              <svg className="ml-8 w-[calc(100%-32px)] h-36" viewBox={`0 0 ${chartW} 140`}>
+                {/* Grid lines */}
+                <line x1="0" y1="0" x2={chartW} y2="0" stroke="#f0f0f0" strokeWidth="0.5" />
+                <line x1="0" y1="70" x2={chartW} y2="70" stroke="#f0f0f0" strokeWidth="0.5" />
+                <line x1="0" y1="130" x2={chartW} y2="130" stroke="#f0f0f0" strokeWidth="0.5" />
+                {/* Vertical grid lines every 2 days */}
+                {data.daily.map((_, i) => i % 2 === 0 ? <line key={i} x1={i * 60} y1="0" x2={i * 60} y2="130" stroke="#f5f5f5" strokeWidth="0.5" /> : null)}
+                {/* Views line (red) */}
+                <polyline
+                  fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  points={data.daily.map((d, i) => `${i * 60},${130 - (d.views / maxY) * 130}`).join(" ")}
+                />
+                {/* Clicks line (blue) */}
+                <polyline
+                  fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  points={data.daily.map((d, i) => `${i * 60},${130 - (d.clicks / maxY) * 130}`).join(" ")}
+                />
+                {/* Dots - every day */}
+                {data.daily.map((d, i) => (
+                  <g key={i}>
+                    <circle cx={i * 60} cy={130 - (d.views / maxY) * 130} r="3.5" fill="#ef4444" />
+                    <circle cx={i * 60} cy={130 - (d.clicks / maxY) * 130} r="3.5" fill="#3b82f6" />
+                  </g>
+                ))}
+              </svg>
+              {/* X axis labels - every 2 days */}
+              <div className="ml-8 flex justify-between text-[10px] text-gray-400 mt-1" style={{ width: "calc(100% - 32px)" }}>
+                {data.daily.filter((_, i) => i % 2 === 0).map((d) => (
+                  <span key={d.date}>{d.date.substring(0, 10)}</span>
+                ))}
+              </div>
             </div>
-            {/* Chart area */}
-            <svg className="ml-8 w-[calc(100%-32px)] h-36" viewBox={`0 0 ${data.daily.length * 60} 140`} preserveAspectRatio="none">
-              {/* Views line (red) */}
-              <polyline
-                fill="none" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                points={data.daily.map((d, i) => `${i * 60 + 30},${140 - (d.views / maxY) * 130}`).join(" ")}
-              />
-              {/* Clicks line (blue) */}
-              <polyline
-                fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                points={data.daily.map((d, i) => `${i * 60 + 30},${140 - (d.clicks / maxY) * 130}`).join(" ")}
-              />
-              {/* Dots */}
-              {data.daily.map((d, i) => (
-                <g key={i}>
-                  <circle cx={i * 60 + 30} cy={140 - (d.views / maxY) * 130} r="3" fill="#f87171" />
-                  <circle cx={i * 60 + 30} cy={140 - (d.clicks / maxY) * 130} r="3" fill="#3b82f6" />
-                </g>
-              ))}
-            </svg>
-            {/* X axis labels */}
-            <div className="ml-8 flex justify-between text-[9px] text-gray-400 mt-1" style={{ width: "calc(100% - 32px)" }}>
-              {data.daily.filter((_, i) => i % Math.max(1, Math.floor(data.daily.length / 5)) === 0).map((d) => (
-                <span key={d.date}>{d.date.substring(5)}</span>
-              ))}
-            </div>
-          </div>
-        ) : (
+          );
+        })() : (
           <p className="text-xs text-gray-300 text-center py-8">데이터가 없습니다</p>
         )}
       </div>
