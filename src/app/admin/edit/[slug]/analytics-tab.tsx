@@ -30,9 +30,9 @@ function DailyChart({ daily, maxY }: { daily: { date: string; views: number; cli
   const len = daily.length;
   const spacing = 80;
   const chartW = Math.max(len - 1, 1) * spacing + 20;
-  const chartH = 180;
+  const chartH = 200;
   const padTop = 15;
-  const plotH = chartH - padTop - 10;
+  const plotH = chartH - padTop - 30;
 
   return (
     <div ref={chartRef} className="relative" style={{ height: "220px", overflow: "visible" }}
@@ -75,6 +75,10 @@ function DailyChart({ daily, maxY }: { daily: { date: string; views: number; cli
               </g>
             );
           })}
+          {/* X axis labels inside SVG - every 2 days */}
+          {daily.map((d, i) => i % 2 === 0 ? (
+            <text key={`x-${i}`} x={10 + i * spacing} y={chartH - 2} textAnchor="middle" fontSize="10" fill="#9ca3af">{d.date.substring(0, 10)}</text>
+          ) : null)}
         </svg>
       </div>
       {/* Mouse-follow tooltip */}
@@ -90,12 +94,6 @@ function DailyChart({ daily, maxY }: { daily: { date: string; views: number; cli
           </div>
         </div>
       )}
-      {/* X axis labels - every 2 days */}
-      <div className="ml-8 flex justify-between text-[10px] text-gray-400 mt-1" style={{ width: "calc(100% - 32px)" }}>
-        {daily.filter((_, i) => i % 2 === 0).map((d) => (
-          <span key={d.date}>{d.date.substring(0, 10)}</span>
-        ))}
-      </div>
     </div>
   );
 }
