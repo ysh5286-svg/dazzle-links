@@ -98,12 +98,61 @@ function DailyChart({ daily, maxY }: { daily: { date: string; views: number; cli
   );
 }
 
-function LinkClickAccordion({ lc, label, url }: { lc: { link_id: string; count: number; daily: { date: string; clicks: number }[] }; label: string; url?: string }) {
-  const [open, setOpen] = useState(false);
-  const maxClicks = Math.max(...lc.daily.map((d) => d.clicks), 1);
+// --- Reusable Mini Chart with tooltip ---
+function MiniChart({ daily, color = "#3b82f6" }: { daily: { date: string; clicks: number }[]; color?: string }) {
+  const [hover, setHover] = useState<number | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const ref = useRef<HTMLDivElement>(null);
+  const maxY = Math.max(...daily.map((d) => d.clicks), 1);
+  const len = daily.length;
+  const spacing = 60;
+  const chartW = Math.max(len - 1, 1) * spacing + 20;
+  const chartH = 120;
+  const padTop = 10;
+  const plotH = chartH - padTop - 25;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+    <div ref={ref} className="relative" style={{ height: "130px", overflow: "visible" }}
+      onMouseMove={(e) => { if (!ref.current) return; const r = ref.current.getBoundingClientRect(); setMousePos({ x: e.clientX - r.left, y: e.clientY - r.top }); }}>
+      <div className="absolute left-0 top-1 bottom-6 w-6 flex flex-col justify-between text-[9px] text-gray-400">
+        <span>{maxY}</span>
+        <span>0</span>
+      </div>
+      <div className="ml-6 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+        <svg style={{ width: `${chartW}px`, height: `${chartH}px`, overflow: "visible" }} viewBox={`0 0 ${chartW} ${chartH}`}>
+          <line x1="10" y1={padTop} x2={chartW - 10} y2={padTop} stroke="#f0f0f0" strokeWidth="0.5" />
+          <line x1="10" y1={padTop + plotH} x2={chartW - 10} y2={padTop + plotH} stroke="#f0f0f0" strokeWidth="0.5" />
+          <polyline fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            points={daily.map((d, i) => `${10 + i * spacing},${padTop + plotH - (d.clicks / maxY) * plotH}`).join(" ")} />
+          {daily.map((d, i) => (
+            <g key={i} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
+              <rect x={10 + i * spacing - 15} y={0} width={30} height={chartH} fill="transparent" />
+              {hover === i && <line x1={10 + i * spacing} y1={padTop} x2={10 + i * spacing} y2={padTop + plotH} stroke="#d1d5db" strokeWidth="1" strokeDasharray="4" />}
+              <circle cx={10 + i * spacing} cy={padTop + plotH - (d.clicks / maxY) * plotH} r={hover === i ? 5 : 3.5} fill={color} className="transition-all duration-100" />
+            </g>
+          ))}
+          {daily.map((d, i) => i % 2 === 0 ? (
+            <text key={`x-${i}`} x={10 + i * spacing} y={chartH - 2} textAnchor="middle" fontSize="9" fill="#9ca3af">{d.date.substring(5)}</text>
+          ) : null)}
+        </svg>
+      </div>
+      {hover !== null && (
+        <div className="absolute pointer-events-none z-20" style={{ left: `${mousePos.x + 12}px`, top: `${mousePos.y - 10}px` }}>
+          <div className="bg-gray-900 text-white rounded-lg px-2.5 py-1.5 shadow-lg text-[10px] whitespace-nowrap">
+            <p className="font-semibold">{daily[hover].date}</p>
+            <p className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: color }} />클릭수: {daily[hover].clicks}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LinkClickAccordion({ lc, label, url }: { lc: { link_id: string; count: number; daily: { date: string; clicks: number }[] }; label: string; url?: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100" style={{ overflow: "visible" }}>
       <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="w-6 h-6 rounded-md bg-green-100 flex items-center justify-center text-green-600 text-[10px] font-bold">L</span>
@@ -119,27 +168,7 @@ function LinkClickAccordion({ lc, label, url }: { lc: { link_id: string; count: 
       </button>
       {open && lc.daily.length > 0 && (
         <div className="px-4 pb-4 border-t border-gray-50 pt-3">
-          {/* Mini line chart */}
-          <div className="relative h-24">
-            <div className="absolute left-0 top-0 bottom-4 w-6 flex flex-col justify-between text-[9px] text-gray-400">
-              <span>{maxClicks}</span>
-              <span>0</span>
-            </div>
-            <svg className="ml-6 w-[calc(100%-24px)] h-20" viewBox={`0 0 ${Math.max(lc.daily.length * 50, 100)} 80`} preserveAspectRatio="none">
-              <polyline
-                fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                points={lc.daily.map((d, i) => `${i * 50 + 25},${80 - (d.clicks / maxClicks) * 70}`).join(" ")}
-              />
-              {lc.daily.map((d, i) => (
-                <circle key={i} cx={i * 50 + 25} cy={80 - (d.clicks / maxClicks) * 70} r="3" fill="#3b82f6" />
-              ))}
-            </svg>
-            <div className="ml-6 flex justify-between text-[8px] text-gray-400 mt-0.5" style={{ width: "calc(100% - 24px)" }}>
-              {lc.daily.filter((_, i) => i % Math.max(1, Math.floor(lc.daily.length / 4)) === 0).map((d) => (
-                <span key={d.date}>{d.date.substring(5)}</span>
-              ))}
-            </div>
-          </div>
+          <MiniChart daily={lc.daily} />
           <div className="flex items-center justify-between mt-2">
             <div>
               <p className="text-xs font-semibold text-gray-800">{label}</p>
@@ -165,7 +194,6 @@ function SnsClickAccordion({ snsClicks, totalClicks, daily, socialUrls }: {
   socialUrls: Record<string, string>;
 }) {
   const [open, setOpen] = useState(false);
-  const maxY = Math.max(...daily.map((d) => d.clicks), 1);
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -183,25 +211,7 @@ function SnsClickAccordion({ snsClicks, totalClicks, daily, socialUrls }: {
       </button>
       {open && (
         <div className="px-4 pb-4 border-t border-gray-50 pt-3">
-          {/* Mini chart */}
-          {daily.length > 0 && (
-            <div className="relative h-20 mb-3">
-              <div className="absolute left-0 top-0 bottom-4 w-6 flex flex-col justify-between text-[9px] text-gray-400">
-                <span>{maxY}</span>
-                <span>0</span>
-              </div>
-              <svg className="ml-6 w-[calc(100%-24px)] h-16" viewBox={`0 0 ${Math.max(daily.length * 50, 100)} 64`} preserveAspectRatio="none">
-                <polyline fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  points={daily.map((d, i) => `${i * 50 + 25},${64 - (d.clicks / maxY) * 56}`).join(" ")} />
-                {daily.map((d, i) => <circle key={i} cx={i * 50 + 25} cy={64 - (d.clicks / maxY) * 56} r="3" fill="#3b82f6" />)}
-              </svg>
-              <div className="ml-6 flex justify-between text-[8px] text-gray-400 mt-0.5" style={{ width: "calc(100% - 24px)" }}>
-                {daily.filter((_, i) => i % Math.max(1, Math.floor(daily.length / 4)) === 0).map((d) => (
-                  <span key={d.date}>{d.date.substring(5)}</span>
-                ))}
-              </div>
-            </div>
-          )}
+          {daily.length > 0 && <MiniChart daily={daily} />}
           {/* Per-platform breakdown - show all platforms, even 0 clicks */}
           <div className="flex flex-col gap-2">
             {Object.entries(socialUrls).map(([platform, url]) => {

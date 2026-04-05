@@ -36,7 +36,7 @@ export default function LinkButton({
   if (layout === "medium") {
     return (
       <a href={url} target="_blank" rel="noopener noreferrer"
-        className={`group flex items-center gap-4 w-full px-4 py-3 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer ${btnClassName}`}>
+        className={`group flex items-center gap-4 w-full px-4 py-3 min-h-[96px] border border-gray-100 shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer ${btnClassName}`}>
         {thumbnail ? (
           <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
             <Image src={thumbnail} alt={label} width={80} height={80} className="w-full h-full object-cover" />
@@ -54,7 +54,7 @@ export default function LinkButton({
   // small (default)
   return (
     <a href={url} target="_blank" rel="noopener noreferrer"
-      className={`group flex items-center gap-4 w-full px-4 py-3 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer ${btnClassName}`}>
+      className={`group flex items-center gap-4 w-full px-4 py-3 min-h-[72px] border border-gray-100 shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer ${btnClassName}`}>
       {thumbnail ? (
         <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
           <Image src={thumbnail} alt={label} width={56} height={56} className="w-full h-full object-cover" />
