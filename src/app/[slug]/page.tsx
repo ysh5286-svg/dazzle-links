@@ -189,7 +189,7 @@ export default async function SlugPage({
             )}
           </h1>
           {page.desc && (
-            <p className="text-sm text-gray-500 text-center leading-relaxed">{page.desc}</p>
+            <p className="text-sm text-gray-500 text-center leading-relaxed whitespace-pre-wrap">{page.desc}</p>
           )}
         </div>
 
