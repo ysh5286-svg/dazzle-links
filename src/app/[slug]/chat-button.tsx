@@ -33,23 +33,28 @@ export default function ChatButton({ url, label, platform = "kakao", position = 
     </svg>
   );
 
+  if (isTop) {
+    // 상단: 채널바 바로 아래, 우측에 고정
+    return (
+      <div className="w-full max-w-[480px] mx-auto flex justify-end px-4 -mt-2 mb-2">
+        <a href={url} target="_blank" rel="noopener noreferrer" data-link-id="kakaotalk-chat"
+          className="flex items-center gap-2 pl-4 pr-2 py-2 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-transform"
+          style={{ backgroundColor: colors.bg, color: colors.text, border: platform === "web" ? "1px solid #e5e7eb" : "none" }}>
+          <span className="text-xs font-bold whitespace-nowrap">{text}</span>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.iconBg }}>{icon}</div>
+        </a>
+      </div>
+    );
+  }
+
+  // 하단: fixed 위치
   return (
-    <div
-      className="w-full max-w-[480px] mx-auto fixed left-1/2 -translate-x-1/2 z-50 pointer-events-none"
-      style={{ [isTop ? "top" : "bottom"]: "24px" }}
-    >
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        data-link-id="kakaotalk-chat"
-        className={`absolute ${isLeft ? "left-4" : "right-4"} pointer-events-auto flex items-center gap-2 pl-4 pr-2 py-2 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-transform`}
-        style={{ backgroundColor: colors.bg, color: colors.text, border: platform === "web" ? "1px solid #e5e7eb" : "none" }}
-      >
+    <div className="w-full max-w-[480px] mx-auto fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+      <a href={url} target="_blank" rel="noopener noreferrer" data-link-id="kakaotalk-chat"
+        className={`absolute bottom-0 ${isLeft ? "left-4" : "right-4"} pointer-events-auto flex items-center gap-2 pl-4 pr-2 py-2 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-transform`}
+        style={{ backgroundColor: colors.bg, color: colors.text, border: platform === "web" ? "1px solid #e5e7eb" : "none" }}>
         <span className="text-xs font-bold whitespace-nowrap">{text}</span>
-        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.iconBg }}>
-          {icon}
-        </div>
+        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.iconBg }}>{icon}</div>
       </a>
     </div>
   );
