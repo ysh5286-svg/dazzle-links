@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import type { PageRow } from "@/lib/supabase";
 
@@ -12,6 +12,8 @@ export default function AdminChannelBar({ currentSlug }: { currentSlug: string }
   const [showAddModal, setShowAddModal] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const isHomeView = pathname === "/admin/home";
 
   // Drag-to-reorder state
   const dragItem = useRef<number | null>(null);
@@ -149,6 +151,16 @@ export default function AdminChannelBar({ currentSlug }: { currentSlug: string }
               </svg>
             </div>
             <span className="text-[9px] w-12 text-center text-gray-400">추가</span>
+          </button>
+
+          {/* 전체 채널 (홈) 분석 */}
+          <button onClick={() => router.push("/admin/home")} className="flex flex-col items-center gap-1 shrink-0">
+            <div className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 border-[2.5px] ${isHomeView ? "border-blue-500 scale-110 bg-gradient-to-br from-pink-500 to-orange-400" : "border-transparent bg-gradient-to-br from-pink-500 to-orange-400 opacity-50 hover:opacity-100"}`}>
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h4v4H4zM4 14h4v4H4zM14 6h4v4h-4zM14 14h4v4h-4z" />
+              </svg>
+            </div>
+            <span className={`text-[9px] w-12 text-center truncate block ${isHomeView ? "text-gray-900 font-bold" : "text-gray-400"}`}>전체 채널</span>
           </button>
 
           {/* 채널 목록 */}

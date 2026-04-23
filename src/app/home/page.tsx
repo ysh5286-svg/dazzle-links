@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import AnalyticsTracker from "../[slug]/analytics-tracker";
 
 export const revalidate = 10;
 
@@ -38,6 +39,7 @@ export default async function ChannelsPage() {
 
   return (
     <div className="min-h-screen bg-[#f9fafb]" style={{ fontFamily: "'Pretendard', -apple-system, sans-serif" }}>
+      <AnalyticsTracker slug="home" />
       <main className="w-full max-w-[480px] mx-auto px-5 pt-12 pb-10 flex flex-col items-center gap-8">
         {/* Header */}
         <div className="flex flex-col items-center gap-2">
