@@ -81,19 +81,24 @@ function DailyChart({ daily, maxY }: { daily: { date: string; views: number; cli
           ) : null)}
         </svg>
       </div>
-      {/* Mouse-follow tooltip */}
-      {hover !== null && (
-        <div className="absolute pointer-events-none z-20" style={{
-          left: `${mousePos.x + 12}px`,
-          top: `${mousePos.y - 10}px`,
-        }}>
-          <div className="bg-gray-900 text-white rounded-lg px-3 py-2 shadow-lg text-[11px] whitespace-nowrap">
-            <p className="font-semibold mb-1">{daily[hover].date}</p>
-            <p className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-blue-500 inline-block" />클릭수: {daily[hover].clicks}</p>
-            <p className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-red-500 inline-block" />조회수: {daily[hover].views}</p>
+      {/* Mouse-follow tooltip - flip to left side if near right edge */}
+      {hover !== null && (() => {
+        const containerWidth = chartRef.current?.clientWidth || 0;
+        const tooltipWidth = 140;
+        const flipLeft = mousePos.x + tooltipWidth + 20 > containerWidth;
+        return (
+          <div className="absolute pointer-events-none z-20" style={{
+            left: flipLeft ? `${mousePos.x - tooltipWidth - 12}px` : `${mousePos.x + 12}px`,
+            top: `${mousePos.y - 10}px`,
+          }}>
+            <div className="bg-gray-900 text-white rounded-lg px-3 py-2 shadow-lg text-[11px] whitespace-nowrap">
+              <p className="font-semibold mb-1">{daily[hover].date}</p>
+              <p className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-blue-500 inline-block" />클릭수: {daily[hover].clicks}</p>
+              <p className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-red-500 inline-block" />조회수: {daily[hover].views}</p>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
@@ -136,14 +141,22 @@ function MiniChart({ daily, color = "#3b82f6" }: { daily: { date: string; clicks
           ) : null)}
         </svg>
       </div>
-      {hover !== null && (
-        <div className="absolute pointer-events-none z-20" style={{ left: `${mousePos.x + 12}px`, top: `${mousePos.y - 10}px` }}>
-          <div className="bg-gray-900 text-white rounded-lg px-2.5 py-1.5 shadow-lg text-[10px] whitespace-nowrap">
-            <p className="font-semibold">{daily[hover].date}</p>
-            <p className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: color }} />클릭수: {daily[hover].clicks}</p>
+      {hover !== null && (() => {
+        const containerWidth = ref.current?.clientWidth || 0;
+        const tooltipWidth = 120;
+        const flipLeft = mousePos.x + tooltipWidth + 20 > containerWidth;
+        return (
+          <div className="absolute pointer-events-none z-20" style={{
+            left: flipLeft ? `${mousePos.x - tooltipWidth - 12}px` : `${mousePos.x + 12}px`,
+            top: `${mousePos.y - 10}px`
+          }}>
+            <div className="bg-gray-900 text-white rounded-lg px-2.5 py-1.5 shadow-lg text-[10px] whitespace-nowrap">
+              <p className="font-semibold">{daily[hover].date}</p>
+              <p className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: color }} />클릭수: {daily[hover].clicks}</p>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
