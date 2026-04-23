@@ -9,8 +9,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "page_slug and event_type required" }, { status: 400 });
   }
 
-  // 클라이언트가 보낸 referer 우선, 없으면 서버 헤더
-  const referer = body.referer || request.headers.get("referer") || "";
+  // 클라이언트가 보낸 referer를 그대로 사용 (빈 문자열이면 "알 수 없음"으로 유지).
+  // request.headers.get("referer")로 fallback하면 현재 페이지 자신을 referer로 기록하게 되어
+  // 유입 채널이 self-traffic으로 오염됨.
+  const referer = typeof body.referer === "string" ? body.referer : "";
   const country = request.headers.get("x-vercel-ip-country") || "";
 
   await supabase.from("analytics").insert({

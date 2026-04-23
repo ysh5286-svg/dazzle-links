@@ -30,6 +30,15 @@ export default function AnalyticsTracker({ slug }: { slug: string }) {
       } catch {
         referer = ref;
       }
+
+      // URL 쿼리 파라미터로 명시적 유입원 태깅 지원 (referrer 정책이 벗겨진 경우 fallback)
+      // 예: link.dazzlepeople.com/mychannel?from=p.dazzlepeople.com
+      try {
+        const fromParam = new URLSearchParams(window.location.search).get("from");
+        if (fromParam && !referer) {
+          referer = /^https?:\/\//.test(fromParam) ? fromParam : `https://${fromParam}`;
+        }
+      } catch { /* ignore */ }
     }
 
     isFirst.current = false;
