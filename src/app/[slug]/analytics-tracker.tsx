@@ -5,6 +5,25 @@ import { useEffect, useRef } from "react";
 // 모듈 레벨: 이전 페이지 slug 기억
 let prevSlug: string | null = null;
 
+// 인앱 브라우저(카톡/인스타/페북 등) 유입은 document.referrer가 빈 값으로 오므로
+// User-Agent 로 식별해서 의사-referer 를 채워 분석 통계에 잡히게 한다.
+function detectInAppReferer(): string {
+  if (typeof navigator === "undefined") return "";
+  const ua = navigator.userAgent || "";
+  if (/KAKAOTALK/i.test(ua)) return "https://kakaotalk.com/";
+  if (/Instagram/i.test(ua)) return "https://instagram.com/";
+  if (/FBAN|FBAV|FB_IAB|FBIOS/i.test(ua)) return "https://facebook.com/";
+  if (/Line\//i.test(ua)) return "https://line.me/";
+  if (/NAVER\(inapp|NaverApp/i.test(ua)) return "https://naver.com/";
+  if (/Daum(?!on)/i.test(ua)) return "https://daum.net/";
+  if (/Twitter/i.test(ua)) return "https://twitter.com/";
+  if (/Snapchat/i.test(ua)) return "https://snapchat.com/";
+  if (/TikTok|musical_ly|BytedanceWebview/i.test(ua)) return "https://tiktok.com/";
+  if (/DiscordBot|Discord\//i.test(ua)) return "https://discord.com/";
+  if (/Threads/i.test(ua)) return "https://threads.net/";
+  return "";
+}
+
 export default function AnalyticsTracker({ slug }: { slug: string }) {
   const isFirst = useRef(true);
 
@@ -39,6 +58,12 @@ export default function AnalyticsTracker({ slug }: { slug: string }) {
           referer = /^https?:\/\//.test(fromParam) ? fromParam : `https://${fromParam}`;
         }
       } catch { /* ignore */ }
+
+      // 그래도 referer 비어있으면 User-Agent 로 인앱 브라우저 식별 시도
+      if (!referer) {
+        const inApp = detectInAppReferer();
+        if (inApp) referer = inApp;
+      }
     }
 
     isFirst.current = false;

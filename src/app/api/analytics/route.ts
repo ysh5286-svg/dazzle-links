@@ -101,10 +101,27 @@ export async function GET(request: NextRequest) {
       }
     } catch { /* ignore */ }
   }
+  // 인앱/주요 도메인 한국어 이름 매핑
+  const HOST_NAMES: Record<string, string> = {
+    "kakaotalk.com": "카카오톡",
+    "instagram.com": "인스타그램",
+    "facebook.com": "페이스북",
+    "line.me": "라인",
+    "naver.com": "네이버",
+    "daum.net": "다음",
+    "twitter.com": "X(트위터)",
+    "x.com": "X(트위터)",
+    "snapchat.com": "스냅챗",
+    "tiktok.com": "틱톡",
+    "discord.com": "디스코드",
+    "threads.net": "쓰레드",
+    "youtube.com": "유튜브",
+    "google.com": "구글",
+  };
   const referers = Object.entries(refererMap)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 10)
-    .map(([name, count]) => ({ name, count }));
+    .map(([host, count]) => ({ name: HOST_NAMES[host] || host, count }));
   const internals = Object.entries(internalMap)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 10)
