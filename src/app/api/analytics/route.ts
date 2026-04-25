@@ -115,6 +115,7 @@ export async function GET(request: NextRequest) {
     "tiktok.com": "틱톡",
     "discord.com": "디스코드",
     "threads.net": "쓰레드",
+    "weixin.qq.com": "위챗",
     "youtube.com": "유튜브",
     "google.com": "구글",
   };

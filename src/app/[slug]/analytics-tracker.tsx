@@ -18,9 +18,10 @@ function detectInAppReferer(): string {
   if (/Daum(?!on)/i.test(ua)) return "https://daum.net/";
   if (/Twitter/i.test(ua)) return "https://twitter.com/";
   if (/Snapchat/i.test(ua)) return "https://snapchat.com/";
-  if (/TikTok|musical_ly|BytedanceWebview/i.test(ua)) return "https://tiktok.com/";
+  if (/TikTok|musical_ly|trill_|Bytedance|Aweme/i.test(ua)) return "https://tiktok.com/";
   if (/DiscordBot|Discord\//i.test(ua)) return "https://discord.com/";
   if (/Threads/i.test(ua)) return "https://threads.net/";
+  if (/MicroMessenger/i.test(ua)) return "https://weixin.qq.com/";
   return "";
 }
 
