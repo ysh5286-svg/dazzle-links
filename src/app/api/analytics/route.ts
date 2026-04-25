@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
       }
     } catch { /* ignore */ }
   }
-  // 인앱/주요 도메인 한국어 이름 매핑
+  // 인앱/주요 도메인 한국어 이름 매핑 (정확 일치 + 부분 일치)
   const HOST_NAMES: Record<string, string> = {
     "kakaotalk.com": "카카오톡",
     "instagram.com": "인스타그램",
@@ -119,10 +119,24 @@ export async function GET(request: NextRequest) {
     "youtube.com": "유튜브",
     "google.com": "구글",
   };
+  // 호스트 부분 매칭 (예: pf.kakao.com, m.kakao.com → 카카오톡 채널)
+  function labelHost(host: string): string {
+    if (HOST_NAMES[host]) return HOST_NAMES[host];
+    if (/(?:^|\.)kakao\.com$/.test(host)) return "카카오톡 채널";
+    if (/(?:^|\.)kakaocorp\.com$/.test(host)) return "카카오";
+    if (/(?:^|\.)naver\.com$/.test(host)) return "네이버";
+    if (/(?:^|\.)daum\.net$/.test(host)) return "다음";
+    if (/(?:^|\.)instagram\.com$/.test(host)) return "인스타그램";
+    if (/(?:^|\.)facebook\.com$/.test(host)) return "페이스북";
+    if (/(?:^|\.)tiktok\.com$/.test(host)) return "틱톡";
+    if (/(?:^|\.)youtube\.com$/.test(host) || host === "youtu.be") return "유튜브";
+    if (/(?:^|\.)google\.[a-z.]+$/.test(host)) return "구글";
+    return host;
+  }
   const referers = Object.entries(refererMap)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 10)
-    .map(([host, count]) => ({ name: HOST_NAMES[host] || host, count }));
+    .map(([host, count]) => ({ name: labelHost(host), count }));
   const internals = Object.entries(internalMap)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 10)

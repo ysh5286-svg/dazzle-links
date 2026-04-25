@@ -10,7 +10,7 @@ let prevSlug: string | null = null;
 function detectInAppReferer(): string {
   if (typeof navigator === "undefined") return "";
   const ua = navigator.userAgent || "";
-  if (/KAKAOTALK/i.test(ua)) return "https://kakaotalk.com/";
+  if (/KAKAOTALK|KakaoStory|Kakao(?!corp)/i.test(ua)) return "https://kakaotalk.com/";
   if (/Instagram/i.test(ua)) return "https://instagram.com/";
   if (/FBAN|FBAV|FB_IAB|FBIOS/i.test(ua)) return "https://facebook.com/";
   if (/Line\//i.test(ua)) return "https://line.me/";
