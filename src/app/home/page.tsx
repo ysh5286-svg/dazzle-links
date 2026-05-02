@@ -93,8 +93,18 @@ export default async function ChannelsPage() {
           <span className="text-xs text-gray-400 font-medium">dazzlepeople.com</span>
         </a>
 
-        {/* Footer */}
-        <p className="mt-2 text-xs text-gray-300">Powered by Dazzle People</p>
+        {/* Footer — 마지막 점(.)은 어드민 진입 숨김 링크 */}
+        <p className="mt-2 text-xs text-gray-300">
+          Powered by Dazzle People
+          <Link
+            href="/admin"
+            aria-label="관리자"
+            prefetch={false}
+            className="cursor-text text-gray-300 no-underline hover:text-gray-300"
+          >
+            .
+          </Link>
+        </p>
       </main>
     </div>
   );
