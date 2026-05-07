@@ -927,7 +927,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
         </div>
 
         {/* Right: Settings */}
-        <div className="flex-1 bg-[#f5f6f8] flex flex-col overflow-hidden">
+        <div className="flex-1 min-w-0 bg-[#f5f6f8] flex flex-col overflow-hidden">
           {/* Tab Navigation */}
           <div className="bg-white border-b border-gray-200 px-6 flex shrink-0">
             <button onClick={() => setActiveTab("page")}
