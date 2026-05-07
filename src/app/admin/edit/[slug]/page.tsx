@@ -860,7 +860,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f0f2f5] flex flex-col">
+      <div className="min-h-screen w-full bg-[#f0f2f5] flex flex-col">
         {/* Skeleton Header */}
         <div className="bg-white border-b border-gray-200 px-4 py-2">
           <div className="flex items-center gap-3">
@@ -903,7 +903,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   }
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5] flex flex-col">
+    <div className="min-h-screen w-full bg-[#f0f2f5] flex flex-col">
       <PageSwitcher currentSlug={slug} currentProfile={profile} />
       {toast && <Toast message={toast} onClose={() => setToast("")} />}
       {showBlockModal && <BlockAddModal onClose={() => setShowBlockModal(false)} onSelect={handleBlockSelect} />}
