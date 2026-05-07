@@ -96,18 +96,18 @@ function DailyChart({ daily, maxY }: { daily: { date: string; views: number; cli
   const plotH = chartH - padTop - 30;
 
   return (
-    <div ref={chartRef} className="relative" style={{ height: "220px", overflow: "visible" }}
+    <div ref={chartRef} className="relative" style={{ height: "232px", overflow: "visible" }}
       onMouseMove={(e) => {
         if (!chartRef.current) return;
         const rect = chartRef.current.getBoundingClientRect();
         setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
       }}>
-      <div className="absolute left-0 top-2 bottom-8 w-8 flex flex-col justify-between text-[10px] text-gray-400">
+      <div className="absolute left-0 top-2 bottom-12 w-8 flex flex-col justify-between text-[10px] text-gray-400">
         <span>{maxY}</span>
         <span>{Math.round(maxY / 2)}</span>
         <span>0</span>
       </div>
-      <div className="ml-8 overflow-x-auto overflow-y-visible" style={{ scrollbarWidth: "none" }}>
+      <div className="chart-scroll ml-8 overflow-x-auto overflow-y-visible">
         <svg style={{ width: `${chartW}px`, height: `${chartH}px`, overflow: "visible" }} viewBox={`0 0 ${chartW} ${chartH}`}>
           {/* Grid */}
           <line x1="10" y1={padTop} x2={chartW - 10} y2={padTop} stroke="#f0f0f0" strokeWidth="0.5" />
@@ -178,13 +178,13 @@ function MiniChart({ daily, color = "#3b82f6" }: { daily: { date: string; clicks
   const plotH = chartH - padTop - 25;
 
   return (
-    <div ref={ref} className="relative" style={{ height: "130px", overflow: "visible" }}
+    <div ref={ref} className="relative" style={{ height: "140px", overflow: "visible" }}
       onMouseMove={(e) => { if (!ref.current) return; const r = ref.current.getBoundingClientRect(); setMousePos({ x: e.clientX - r.left, y: e.clientY - r.top }); }}>
-      <div className="absolute left-0 top-1 bottom-6 w-6 flex flex-col justify-between text-[9px] text-gray-400">
+      <div className="absolute left-0 top-1 bottom-10 w-6 flex flex-col justify-between text-[9px] text-gray-400">
         <span>{maxY}</span>
         <span>0</span>
       </div>
-      <div className="ml-6 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+      <div className="chart-scroll ml-6 overflow-x-auto">
         <svg style={{ width: `${chartW}px`, height: `${chartH}px`, overflow: "visible" }} viewBox={`0 0 ${chartW} ${chartH}`}>
           <line x1="10" y1={padTop} x2={chartW - 10} y2={padTop} stroke="#f0f0f0" strokeWidth="0.5" />
           <line x1="10" y1={padTop + plotH} x2={chartW - 10} y2={padTop + plotH} stroke="#f0f0f0" strokeWidth="0.5" />
