@@ -15,11 +15,72 @@ type AnalyticsData = {
 
 const PERIODS = [
   { key: "all", label: "전체기간" },
-  { key: "7d", label: "일주일" },
-  { key: "1m", label: "1개월" },
-  { key: "3m", label: "3개월" },
-  { key: "6m", label: "6개월" },
+  { key: "today", label: "오늘" },
+  { key: "thisweek", label: "이번주" },
+  { key: "lastweek", label: "저번주" },
+  { key: "thismonth", label: "이번달" },
+  { key: "lastmonth", label: "지난달" },
+  { key: "7d", label: "최근 7일" },
+  { key: "1m", label: "최근 1개월" },
+  { key: "3m", label: "최근 3개월" },
+  { key: "6m", label: "최근 6개월" },
+  { key: "custom", label: "사용자지정" },
 ];
+
+// 클라이언트 측 from/to 계산. 월요일 시작, 종료일은 23:59:59.999로 inclusive 처리.
+function getDateRange(periodKey: string, customFrom: string, customTo: string): { from: string; to: string } | null {
+  const now = new Date();
+  const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+  const endOfDay = (d: Date) => { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; };
+  const mondayOf = (d: Date) => {
+    const x = startOfDay(d);
+    const day = x.getDay(); // 0=Sun..6=Sat
+    const diff = day === 0 ? 6 : day - 1;
+    x.setDate(x.getDate() - diff);
+    return x;
+  };
+
+  switch (periodKey) {
+    case "today":
+      return { from: startOfDay(now).toISOString(), to: now.toISOString() };
+    case "thisweek":
+      return { from: mondayOf(now).toISOString(), to: now.toISOString() };
+    case "lastweek": {
+      const lastMon = mondayOf(now);
+      lastMon.setDate(lastMon.getDate() - 7);
+      const lastSun = endOfDay(new Date(lastMon));
+      lastSun.setDate(lastSun.getDate() + 6);
+      return { from: lastMon.toISOString(), to: lastSun.toISOString() };
+    }
+    case "thismonth": {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      return { from: start.toISOString(), to: now.toISOString() };
+    }
+    case "lastmonth": {
+      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+      const end = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      end.setMilliseconds(-1);
+      return { from: start.toISOString(), to: end.toISOString() };
+    }
+    case "custom": {
+      if (!customFrom || !customTo) return null;
+      const f = new Date(customFrom + "T00:00:00");
+      const t = new Date(customTo + "T23:59:59.999");
+      if (isNaN(f.getTime()) || isNaN(t.getTime()) || f > t) return null;
+      return { from: f.toISOString(), to: t.toISOString() };
+    }
+    default:
+      return null;
+  }
+}
+
+function todayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 const COLORS = ["#f87171", "#fb923c", "#facc15", "#4ade80", "#60a5fa", "#a78bfa"];
 
@@ -256,15 +317,26 @@ const PLATFORM_LABELS: Record<string, string> = {
 export default function AnalyticsTab({ slug, linkLabels, linkUrls, socialUrls }: { slug: string; linkLabels: Record<string, string>; linkUrls?: Record<string, string>; socialUrls?: Record<string, string> }) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [period, setPeriod] = useState("7d");
+  const [customFrom, setCustomFrom] = useState(todayStr());
+  const [customTo, setCustomTo] = useState(todayStr());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // 사용자지정인데 from/to 미입력/역순이면 호출 보류
+    if (period === "custom") {
+      const range = getDateRange("custom", customFrom, customTo);
+      if (!range) return;
+    }
     setLoading(true);
-    fetch(`/api/analytics?slug=${slug}&period=${period}`)
+    const range = getDateRange(period, customFrom, customTo);
+    const url = range
+      ? `/api/analytics?slug=${slug}&from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`
+      : `/api/analytics?slug=${slug}&period=${period}`;
+    fetch(url)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [slug, period]);
+  }, [slug, period, customFrom, customTo]);
 
   if (loading || !data) {
     return (
@@ -280,12 +352,25 @@ export default function AnalyticsTab({ slug, linkLabels, linkUrls, socialUrls }:
   return (
     <div className="p-6 flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-gray-900">분석</h2>
-        <select value={period} onChange={(e) => setPeriod(e.target.value)}
-          className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white">
-          {PERIODS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
-        </select>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold text-gray-900">분석</h2>
+          <select value={period} onChange={(e) => setPeriod(e.target.value)}
+            className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white">
+            {PERIODS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+          </select>
+        </div>
+        {period === "custom" && (
+          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+            <input type="date" value={customFrom} max={customTo || todayStr()}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              className="px-2 py-1 border border-gray-200 rounded-lg text-xs bg-white" />
+            <span className="text-xs text-gray-400">~</span>
+            <input type="date" value={customTo} min={customFrom} max={todayStr()}
+              onChange={(e) => setCustomTo(e.target.value)}
+              className="px-2 py-1 border border-gray-200 rounded-lg text-xs bg-white" />
+          </div>
+        )}
       </div>
 
       {/* Line Chart */}
