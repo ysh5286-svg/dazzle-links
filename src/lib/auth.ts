@@ -45,20 +45,34 @@ export async function deleteSession() {
   cookieStore.delete(SESSION_NAME);
 }
 
-// Rate limiting: simple in-memory store
+// Rate limiting: simple in-memory store.
+// 주의: Vercel 서버리스는 인스턴스별로 이 Map이 따로 존재하므로 인스턴스 간
+// 카운트가 공유되지 않는다. 따라서 "실패한 시도만" 카운트하고, 비밀번호가
+// 맞으면 레이트리밋과 무관하게 항상 통과시킨다(아래 route.ts 참고).
+const RATE_WINDOW_MS = 15 * 60 * 1000; // 15분
+const RATE_MAX_FAILS = 10; // 15분 내 실패 허용 횟수
 const attempts = new Map<string, { count: number; resetAt: number }>();
 
-export function checkRateLimit(ip: string): boolean {
+// 로그인 실패 시에만 호출 — 실패 횟수 1 증가
+export function recordFailedAttempt(ip: string): void {
   const now = Date.now();
   const record = attempts.get(ip);
-
   if (record && record.resetAt > now) {
-    if (record.count >= 5) return false; // blocked
     record.count++;
-    return true;
+  } else {
+    attempts.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
   }
+}
 
-  // Reset after 15 minutes
-  attempts.set(ip, { count: 1, resetAt: now + 15 * 60 * 1000 });
-  return true;
+// 현재 IP가 실패 횟수 초과로 차단 상태인지 확인 (카운트 증가 없음)
+export function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const record = attempts.get(ip);
+  if (!record || record.resetAt <= now) return false;
+  return record.count >= RATE_MAX_FAILS;
+}
+
+// 로그인 성공 시 호출 — 실패 기록 초기화
+export function clearAttempts(ip: string): void {
+  attempts.delete(ip);
 }
