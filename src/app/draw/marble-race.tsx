@@ -485,7 +485,7 @@ export default function MarbleRace() {
   // ── 화면 ────────────────────────────────────────────────────────
   if (phase === "setup") {
     return (
-      <main className="min-h-dvh bg-gray-50 flex flex-col items-center px-4 py-8">
+      <main className="w-full min-h-dvh bg-gray-50 flex flex-col items-center px-4 py-8">
         <div className="w-full max-w-md">
           <header className="text-center mb-6">
             <div className="flex items-center justify-center gap-2 mb-1">
@@ -604,7 +604,7 @@ export default function MarbleRace() {
 
   if (phase === "race") {
     return (
-      <main className="h-dvh bg-gray-50 flex flex-col overflow-hidden">
+      <main className="w-full h-dvh bg-gray-50 flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 bg-white border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-lg">🎱</span>
@@ -671,7 +671,7 @@ export default function MarbleRace() {
 
   // done
   return (
-    <main className="min-h-dvh bg-gray-50 flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden">
+    <main className="w-full min-h-dvh bg-gray-50 flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden">
       <Confetti />
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative z-10">
         <div className="text-center mb-5">
