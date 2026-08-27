@@ -46,7 +46,7 @@ export default function AdminLogin() {
           type="text"
           value={loginId}
           onChange={(e) => setLoginId(e.target.value)}
-          placeholder="캘린더 아이디 (차장 이상)"
+          placeholder="캘린더 아이디"
           className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
           autoFocus
         />
