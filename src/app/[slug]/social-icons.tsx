@@ -68,6 +68,16 @@ const platformIcons: Record<string, React.ComponentType<{ className?: string }>>
   website: WebsiteIcon,
 };
 
+const platformLabels: Record<string, string> = {
+  instagram: "인스타그램",
+  facebook: "페이스북",
+  tiktok: "틱톡",
+  youtube: "유튜브",
+  naver: "네이버",
+  kakaotalk: "카카오톡",
+  website: "홈페이지",
+};
+
 export default function SocialIcons({
   socials,
 }: {
@@ -85,9 +95,12 @@ export default function SocialIcons({
             data-link-id={`sns:${s.platform}`}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={platformLabels[s.platform] ?? s.platform}
+            title={platformLabels[s.platform] ?? s.platform}
             className="hover:scale-125 active:scale-90 transition-all duration-200"
           >
             <Icon className="w-8 h-8 text-gray-800" />
+            <span className="sr-only">{platformLabels[s.platform] ?? s.platform}</span>
           </a>
         );
       })}

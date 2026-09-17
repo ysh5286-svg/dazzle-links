@@ -16,6 +16,9 @@ import LinkListWithSearch from "./link-list-with-search";
 
 export const revalidate = 10;
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://link.dazzlepeople.com";
+
 const FONT_MAP: Record<string, string> = {
   pretendard: "'Pretendard', -apple-system, sans-serif",
   "noto-sans": "'Noto Sans KR', sans-serif",
@@ -47,6 +50,7 @@ export async function generateMetadata({
   return {
     title: `${page.title} | Dazzle Links`,
     description: page.desc,
+    alternates: { canonical: `${SITE_URL}/${slug}` },
     openGraph: {
       title: page.title,
       description: page.desc,
@@ -115,8 +119,40 @@ export default async function SlugPage({
   }
   const hoverTextColor = isDark(hoverColor) ? "#ffffff" : "#1f2937";
 
+  // 검색엔진용 구조화 데이터 — 이 링크 페이지를 채널 프로필로 선언하고
+  // 인스타그램 등 SNS 계정을 sameAs 로 묶어 같은 주체임을 알린다.
+  const pageUrl = `${SITE_URL}/${slug}`;
+  const sameAs = socials
+    .map((s: { url?: string }) => s.url)
+    .filter((u: string | undefined): u is string => !!u && /^https?:\/\//.test(u));
+  const profileLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    url: pageUrl,
+    name: page.title,
+    ...(page.desc ? { description: page.desc } : {}),
+    mainEntity: {
+      "@type": "Organization",
+      "@id": `${pageUrl}#channel`,
+      name: page.title,
+      url: pageUrl,
+      ...(page.desc ? { description: page.desc } : {}),
+      ...(page.profile ? { image: page.profile, logo: page.profile } : {}),
+      ...(sameAs.length ? { sameAs } : {}),
+      parentOrganization: {
+        "@type": "Organization",
+        name: "다즐피플",
+        url: "https://dazzlepeople.com",
+      },
+    },
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(profileLd) }}
+      />
       <DesignPreviewListener />
       <AnalyticsTracker slug={slug} />
       <style>{`
