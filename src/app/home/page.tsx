@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabaseServer } from "@/lib/supabase-server";
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ChannelsPage() {
-  const { data: pages } = await supabase
+  const { data: pages } = await supabaseServer
     .from("pages")
     .select("*")
     .order("sort_order", { ascending: true });

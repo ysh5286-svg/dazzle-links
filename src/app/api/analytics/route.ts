@@ -1,23 +1,78 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseServer } from "@/lib/supabase-server";
+import { getVerifiedSession } from "@/lib/session-server";
 
-// POST: 이벤트 기록 (view 또는 click)
+const EVENT_TYPES = new Set(["view", "click"]);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// analytics-tracker 가 links.id 가 아닌 값을 link_id 로 보내는 경우:
+//  - "kakaotalk-chat" (chat-button.tsx), "sns:<platform>" (social-icons.tsx)
+//  - data-link-id 조상이 없는 외부 앵커는 href 자체 (http/https URL)
+const LINK_ID_SENTINEL_RE = /^(kakaotalk-chat|sns:[a-z0-9_-]{1,32})$/;
+const MAX_SLUG_LEN = 64;
+const MAX_LINK_ID_LEN = 500;
+const MAX_REFERER_LEN = 500;
+
+// POST: 이벤트 기록 (view 또는 click) — 공개 엔드포인트이므로 입력을 엄격히 검증한다
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const { page_slug, link_id, event_type } = body;
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "invalid body" }, { status: 400 });
+  }
+  const b = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
+  const page_slug = typeof b.page_slug === "string" ? b.page_slug : "";
+  const event_type = typeof b.event_type === "string" ? b.event_type : "";
   if (!page_slug || !event_type) {
     return NextResponse.json({ error: "page_slug and event_type required" }, { status: 400 });
+  }
+  if (page_slug.length > MAX_SLUG_LEN || !EVENT_TYPES.has(event_type)) {
+    return NextResponse.json({ error: "invalid event" }, { status: 400 });
+  }
+
+  // page_slug 는 실제 pages 행이어야 한다. "home" 은 /home (채널 목록 페이지) 전용 슬러그.
+  let pageId: string | null = null;
+  if (page_slug !== "home") {
+    const { data: page } = await supabaseServer
+      .from("pages")
+      .select("id")
+      .eq("slug", page_slug)
+      .maybeSingle();
+    if (!page) return NextResponse.json({ error: "unknown page_slug" }, { status: 400 });
+    pageId = page.id;
+  }
+
+  // link_id: links.id(UUID) 면 해당 페이지 소속인지 확인, 그 외에는 허용된 sentinel 또는 http(s) URL 만
+  let link_id: string | null = null;
+  const rawLinkId = b.link_id;
+  if (rawLinkId !== undefined && rawLinkId !== null && rawLinkId !== "") {
+    if (typeof rawLinkId !== "string" || rawLinkId.length > MAX_LINK_ID_LEN) {
+      return NextResponse.json({ error: "invalid link_id" }, { status: 400 });
+    }
+    if (UUID_RE.test(rawLinkId)) {
+      if (!pageId) return NextResponse.json({ error: "invalid link_id" }, { status: 400 });
+      const { data: link } = await supabaseServer
+        .from("links")
+        .select("id")
+        .eq("id", rawLinkId)
+        .eq("page_id", pageId)
+        .maybeSingle();
+      if (!link) return NextResponse.json({ error: "link_id does not belong to page" }, { status: 400 });
+    } else if (!LINK_ID_SENTINEL_RE.test(rawLinkId) && !/^https?:\/\//i.test(rawLinkId)) {
+      return NextResponse.json({ error: "invalid link_id" }, { status: 400 });
+    }
+    link_id = rawLinkId;
   }
 
   // 클라이언트가 보낸 referer를 그대로 사용 (빈 문자열이면 "알 수 없음"으로 유지).
   // request.headers.get("referer")로 fallback하면 현재 페이지 자신을 referer로 기록하게 되어
   // 유입 채널이 self-traffic으로 오염됨.
-  const referer = typeof body.referer === "string" ? body.referer : "";
-  const country = request.headers.get("x-vercel-ip-country") || "";
+  const referer = typeof b.referer === "string" ? b.referer.slice(0, MAX_REFERER_LEN) : "";
+  const country = (request.headers.get("x-vercel-ip-country") || "").slice(0, 8);
 
-  await supabase.from("analytics").insert({
+  await supabaseServer.from("analytics").insert({
     page_slug,
-    link_id: link_id || null,
+    link_id,
     event_type,
     referer,
     country,
@@ -26,8 +81,12 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-// GET: 분석 데이터 조회
+// GET: 분석 데이터 조회 (관리자 세션 필요)
 export async function GET(request: NextRequest) {
+  if (!(await getVerifiedSession())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get("slug");
   const period = searchParams.get("period") || "7d";
@@ -50,7 +109,7 @@ export async function GET(request: NextRequest) {
   const endDate = to || now.toISOString();
 
   // 모든 이벤트 가져오기
-  const { data: events } = await supabase
+  const { data: events } = await supabaseServer
     .from("analytics")
     .select("*")
     .eq("page_slug", slug)

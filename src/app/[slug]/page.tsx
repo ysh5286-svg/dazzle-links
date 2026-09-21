@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import type { Metadata } from "next";
-import { supabase } from "@/lib/supabase";
+import { supabaseServer } from "@/lib/supabase-server";
+import { FONT_MAP, SHAPE_MAP, isHexColor } from "@/lib/page-design";
 import LinkButton from "./link-button";
 import SocialIcons from "./social-icons";
 import DesignPreviewListener from "./design-preview";
@@ -19,28 +20,13 @@ export const revalidate = 10;
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://link.dazzlepeople.com";
 
-const FONT_MAP: Record<string, string> = {
-  pretendard: "'Pretendard', -apple-system, sans-serif",
-  "noto-sans": "'Noto Sans KR', sans-serif",
-  gothic: "'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif",
-  "nanum-gothic": "'Nanum Gothic', sans-serif",
-  "nanum-square": "'NanumSquare', sans-serif",
-  gmarket: "'GmarketSans', sans-serif",
-};
-
-const SHAPE_MAP: Record<string, string> = {
-  rounded: "16px",
-  pill: "9999px",
-  square: "4px",
-};
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const { data: page } = await supabase
+  const { data: page } = await supabaseServer
     .from("pages")
     .select("title, desc, profile")
     .eq("slug", slug)
@@ -68,8 +54,8 @@ export default async function SlugPage({
 
   // 모든 쿼리를 최대한 병렬로 실행
   const [pageRes, channelsRes] = await Promise.all([
-    supabase.from("pages").select("*").eq("slug", slug).single(),
-    supabase.from("pages").select("slug, title, profile").order("sort_order", { ascending: true }),
+    supabaseServer.from("pages").select("*").eq("slug", slug).single(),
+    supabaseServer.from("pages").select("slug, title, profile").order("sort_order", { ascending: true }),
   ]);
 
   const page = pageRes.data;
@@ -79,8 +65,8 @@ export default async function SlugPage({
 
   // page.id를 알았으니 links + socials 병렬 호출
   const [linksRes, socialsRes] = await Promise.all([
-    supabase.from("links").select("*").eq("page_id", page.id).order("sort_order"),
-    supabase.from("socials").select("*").eq("page_id", page.id).order("sort_order"),
+    supabaseServer.from("links").select("*").eq("page_id", page.id).order("sort_order"),
+    supabaseServer.from("socials").select("*").eq("page_id", page.id).order("sort_order"),
   ]);
 
   const allLinks = (linksRes.data || []).filter((l: { enabled?: boolean }) => l.enabled !== false);
@@ -91,7 +77,7 @@ export default async function SlugPage({
   const groupLinkIds = allLinks.filter((l: { layout?: string }) => l.layout === "group").map((l: { id: string }) => l.id);
   const groupLinksMap: Record<string, Array<{ id: string; label: string; url: string; image: string | null; price: string | null; original_price: string | null; enabled: boolean }>> = {};
   if (groupLinkIds.length > 0) {
-    const { data: groupData } = await supabase
+    const { data: groupData } = await supabaseServer
       .from("group_links")
       .select("*")
       .in("link_id", groupLinkIds)
@@ -102,9 +88,10 @@ export default async function SlugPage({
     }
   }
 
-  const bgColor = page.bg_color || "#f9fafb";
-  const btnColor = page.btn_color || "#ffffff";
-  const hoverColor = page.hover_color || "#e5e7eb";
+  // DB 값은 <style> 에 그대로 삽입되므로 허용 형식(hex 색상 / 알려진 키)만 통과시키고 아니면 기본값
+  const bgColor = isHexColor(page.bg_color) ? page.bg_color : "#f9fafb";
+  const btnColor = isHexColor(page.btn_color) ? page.btn_color : "#ffffff";
+  const hoverColor = isHexColor(page.hover_color) ? page.hover_color : "#e5e7eb";
   const btnShape = SHAPE_MAP[page.btn_shape] || "16px";
   const btnAction = page.btn_action || "fill";
   const fontFamily = FONT_MAP[page.font] || FONT_MAP.pretendard;
@@ -151,7 +138,8 @@ export default async function SlugPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(profileLd) }}
+        // "<" 를 이스케이프해 </script> 로 스크립트 컨텍스트를 탈출하지 못하게 한다
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(profileLd).replace(/</g, "\\u003c") }}
       />
       <DesignPreviewListener />
       <AnalyticsTracker slug={slug} />

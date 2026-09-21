@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseServer } from "@/lib/supabase-server";
+import { getVerifiedSession } from "@/lib/session-server";
 
 // GET: 모든 페이지 목록
 export async function GET() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer
     .from("pages")
     .select("*")
     .order("sort_order", { ascending: true });
@@ -16,6 +17,7 @@ export async function GET() {
 
 // POST: 새 페이지 생성
 export async function POST(request: Request) {
+  if (!(await getVerifiedSession())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { slug, title } = await request.json();
 
   if (!slug || !title) {
@@ -25,7 +27,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer
     .from("pages")
     .insert({ slug, title, desc: "", profile: "" })
     .select()

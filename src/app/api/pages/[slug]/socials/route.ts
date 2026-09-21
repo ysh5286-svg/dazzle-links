@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseServer } from "@/lib/supabase-server";
+import { getVerifiedSession } from "@/lib/session-server";
 
 async function getPageId(slug: string): Promise<string | null> {
-  const { data } = await supabase
+  const { data } = await supabaseServer
     .from("pages")
     .select("id")
     .eq("slug", slug)
@@ -14,6 +15,7 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  if (!(await getVerifiedSession())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { slug } = await params;
   const pageId = await getPageId(slug);
   if (!pageId) {
@@ -21,7 +23,7 @@ export async function POST(
   }
 
   const body = await request.json();
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer
     .from("socials")
     .insert({ ...body, page_id: pageId })
     .select()
@@ -34,9 +36,10 @@ export async function POST(
 }
 
 export async function PUT(request: Request) {
+  if (!(await getVerifiedSession())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id, ...updates } = await request.json();
 
-  const { error } = await supabase
+  const { error } = await supabaseServer
     .from("socials")
     .update(updates)
     .eq("id", id);
@@ -48,9 +51,10 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!(await getVerifiedSession())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await request.json();
 
-  const { error } = await supabase.from("socials").delete().eq("id", id);
+  const { error } = await supabaseServer.from("socials").delete().eq("id", id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
