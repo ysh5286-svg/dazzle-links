@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
 import { getVerifiedSession } from "@/lib/session-server";
+import { fetchAllRows, PagedSelectError } from "@/lib/paged-select";
 
 const EVENT_TYPES = new Set(["view", "click"]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -11,6 +12,7 @@ const LINK_ID_SENTINEL_RE = /^(kakaotalk-chat|sns:[a-z0-9_-]{1,32})$/;
 const MAX_SLUG_LEN = 64;
 const MAX_LINK_ID_LEN = 500;
 const MAX_REFERER_LEN = 500;
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // POST: 이벤트 기록 (view 또는 click) — 공개 엔드포인트이므로 입력을 엄격히 검증한다
 export async function POST(request: NextRequest) {
@@ -99,25 +101,42 @@ export async function GET(request: NextRequest) {
   let startDate: string;
   const now = new Date();
   if (from && to) {
-    startDate = from;
+    // 날짜만 온 경우(YYYY-MM-DD) 시작일은 00:00, 종료일은 그날 23:59:59.999 까지 포함 (종료일 당일 이벤트 누락 방지)
+    startDate = DATE_ONLY_RE.test(from) ? `${from}T00:00:00.000Z` : from;
   } else {
     const days = period === "all" ? 3650 : period === "7d" ? 7 : period === "1m" ? 30 : period === "3m" ? 90 : period === "6m" ? 180 : 7;
     const d = new Date(now);
     d.setDate(d.getDate() - days);
     startDate = d.toISOString();
   }
-  const endDate = to || now.toISOString();
+  const endDate = to ? (DATE_ONLY_RE.test(to) ? `${to}T23:59:59.999Z` : to) : now.toISOString();
+  if (Number.isNaN(Date.parse(startDate)) || Number.isNaN(Date.parse(endDate))) {
+    return NextResponse.json({ error: "invalid date range" }, { status: 400 });
+  }
 
-  // 모든 이벤트 가져오기
-  const { data: events } = await supabaseServer
-    .from("analytics")
-    .select("*")
-    .eq("page_slug", slug)
-    .gte("created_at", startDate)
-    .lte("created_at", endDate)
-    .order("created_at");
-
-  const rows = events || [];
+  // 모든 이벤트 가져오기 — 서버 응답 상한(기본 1,000행)에 잘리지 않도록 안정 정렬(created_at, id)로 페이지 순회.
+  // 중간 페이지 오류는 부분 합계 대신 500 으로 알린다.
+  type EventRow = { created_at: string; event_type: string; link_id: string | null; referer: string | null; country: string | null };
+  let rows: EventRow[];
+  try {
+    rows = await fetchAllRows<EventRow>(
+      ({ from: f, to: t, order, wantCount }) => {
+        let q = supabaseServer
+          .from("analytics")
+          .select("created_at, event_type, link_id, referer, country", wantCount ? { count: "exact" } : undefined)
+          .eq("page_slug", slug)
+          .gte("created_at", startDate)
+          .lte("created_at", endDate);
+        for (const o of order) q = q.order(o.column, { ascending: o.ascending !== false });
+        return q.range(f, t);
+      },
+      { order: [{ column: "created_at", ascending: true }, { column: "id", ascending: true, optional: true }], pageSize: 1000 },
+    );
+  } catch (e) {
+    const page = e instanceof PagedSelectError ? e.page : 0;
+    console.error(`[analytics] page ${page} fetch failed:`, e instanceof Error ? e.message : e);
+    return NextResponse.json({ error: "통계 조회 실패 (일부만 집계하지 않았습니다)" }, { status: 500 });
+  }
 
   // 일별 통계
   const dailyMap: Record<string, { views: number; clicks: number }> = {};
