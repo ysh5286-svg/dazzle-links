@@ -222,12 +222,12 @@ function TextEditor({ link, onUpdate }: { link: LinkRow; onUpdate: (id: string, 
     <div className="px-5 pb-5 flex flex-col gap-3 border-t border-gray-50 pt-4">
       <div>
         <label className="text-xs font-medium text-red-400 mb-1 block">대표문구 *</label>
-        <input type="text" defaultValue={link.label} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
+        <input type="text" data-field="label" defaultValue={link.label} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
           className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
       </div>
       <div>
         <label className="text-xs font-medium text-red-400 mb-1 block">상세문구 *</label>
-        <textarea defaultValue={link.url} onBlur={(e) => onUpdate(link.id, { url: e.target.value })} rows={3}
+        <textarea data-field="url" defaultValue={link.url} onBlur={(e) => onUpdate(link.id, { url: e.target.value })} rows={3}
           className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none" />
       </div>
       <button onClick={() => setShowOptions(!showOptions)} className="self-end text-xs text-gray-500 hover:text-gray-700 font-medium">
@@ -439,7 +439,7 @@ function SortableLinkBlock({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div ref={setNodeRef} style={style} data-row-id={link.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="flex items-center px-3 py-3.5">
         {/* Drag Handle */}
@@ -505,7 +505,7 @@ function SortableLinkBlock({
         <div className="px-5 pb-5 flex flex-col gap-3 border-t border-gray-50 pt-4">
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">가이드 문구</label>
-            <input type="text" defaultValue={link.label || "검색"} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
+            <input type="text" data-field="label" defaultValue={link.label || "검색"} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
               placeholder="검색창 내부에 문구 노출 (미입력시 '검색')"
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
           </div>
@@ -514,7 +514,7 @@ function SortableLinkBlock({
         <div className="px-5 pb-5 flex flex-col gap-3 border-t border-gray-50 pt-4">
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">대표 문구</label>
-            <input type="text" defaultValue={link.label} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
+            <input type="text" data-field="label" defaultValue={link.label} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
           </div>
           <GroupLinkEditor linkId={link.id} onError={onError}
@@ -527,12 +527,12 @@ function SortableLinkBlock({
         <div className="px-5 pb-5 flex flex-col gap-3 border-t border-gray-50 pt-4">
           <div>
             <label className="text-xs font-medium text-red-400 mb-1 block">연결 URL *</label>
-            <input type="text" defaultValue={link.url} onBlur={(e) => onUpdate(link.id, { url: e.target.value })}
+            <input type="text" data-field="url" defaultValue={link.url} onBlur={(e) => onUpdate(link.id, { url: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
           </div>
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">버튼 문구</label>
-            <input type="text" defaultValue={link.label} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
+            <input type="text" data-field="label" defaultValue={link.label} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
           </div>
           <div>
@@ -592,12 +592,12 @@ function SortableLinkBlock({
         <div className="px-5 pb-5 flex flex-col gap-3 border-t border-gray-50 pt-4">
           <div>
             <label className="text-xs font-medium text-red-400 mb-1 block">연결 URL *</label>
-            <input type="text" defaultValue={link.url} onBlur={(e) => onUpdate(link.id, { url: e.target.value })}
+            <input type="text" data-field="url" defaultValue={link.url} onBlur={(e) => onUpdate(link.id, { url: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
           </div>
           <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">대표문구</label>
-            <input type="text" defaultValue={link.label} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
+            <input type="text" data-field="label" defaultValue={link.label} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
           </div>
           <div>
@@ -637,9 +637,20 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   const [openProfile, setOpenProfile] = useState(false);
   const [openSns, setOpenSns] = useState(false);
   const [openLinks, setOpenLinks] = useState<Record<string, boolean>>({});
-  // 실패 후 되돌린 행은 key 를 바꿔 다시 그린다 (블럭 입력이 defaultValue 비제어라 상태만 바꾸면 화면에 남기 때문)
-  const [rowRev, setRowRev] = useState<Record<string, number>>({});
-  const bumpRev = (id: string) => setRowRev((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }));
+  // 실패 후 되돌림: 블럭 입력이 defaultValue 비제어라 상태만 바꾸면 화면에 남는다. 행을 다시 그리면(key 변경) 같은 행의
+  // 다른 필드에서 입력 중이던 값·포커스가 사라지므로, **실패한 필드의 입력만** DOM 값을 서버 확인값으로 맞춘다.
+  // 사용자가 지금 그 입력에 포커스를 두고 타이핑 중이면 건드리지 않는다(다음 blur 때 다시 저장됨).
+  const syncFieldInputs = (rowId: string, patch: Record<string, unknown>) => {
+    if (typeof document === "undefined") return;
+    const row = document.querySelector(`[data-row-id="${rowId}"]`);
+    if (!row) return;
+    for (const [field, value] of Object.entries(patch)) {
+      row.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(`[data-field="${field}"]`).forEach((el) => {
+        if (el === document.activeElement) return;
+        el.value = value == null ? "" : String(value);
+      });
+    }
+  };
 
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
@@ -670,7 +681,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   // 서로 다른 필드(대표문구·상세문구)를 연달아 고친 뒤 하나만 실패해도 성공한 필드는 유지되고, 실패한 필드만 서버값으로 돌아간다.
   const [linkTracker] = useState(() => createFieldSaveTracker<LinkRow>({
     send: async (id, patch) => { const r = await apiJson(`/api/pages/${slug}/links`, "PUT", { id, ...patch }); return r.ok ? { ok: true } : { ok: false, error: r.error }; },
-    applyView: (id, patch, reason) => { setLinks((prev) => prev.map((l) => l.id === id ? { ...l, ...patch } : l)); if (reason === "revert") bumpRev(id); },
+    applyView: (id, patch, reason) => { setLinks((prev) => prev.map((l) => l.id === id ? { ...l, ...patch } : l)); if (reason === "revert") syncFieldInputs(id, patch as Record<string, unknown>); },
     onError: ({ error, failed, restored }) => {
       const kept = Object.keys(failed).filter((f) => !(f in restored));
       notifyError(`블럭 수정 저장 실패 — ${error}. ${Object.keys(restored).length ? `${Object.keys(restored).join(", ")} 은 이전 값으로 되돌렸습니다` : ""}${kept.length ? ` (${kept.join(", ")} 은 더 최신 입력이 반영됩니다)` : ""}`.trim());
@@ -679,7 +690,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   }));
   const [socialTracker] = useState(() => createFieldSaveTracker<SocialRow>({
     send: async (id, patch) => { const r = await apiJson(`/api/pages/${slug}/socials`, "PUT", { id, ...patch }); return r.ok ? { ok: true } : { ok: false, error: r.error }; },
-    applyView: (id, patch, reason) => { setSocials((prev) => prev.map((s) => s.id === id ? { ...s, ...patch } : s)); if (reason === "revert") bumpRev(id); },
+    applyView: (id, patch, reason) => { setSocials((prev) => prev.map((s) => s.id === id ? { ...s, ...patch } : s)); if (reason === "revert") syncFieldInputs(id, patch as Record<string, unknown>); },
     onError: ({ error, restored }) => notifyError(`SNS 수정 저장 실패 — ${error}.${Object.keys(restored).length ? " 이전 값으로 되돌렸습니다" : " 더 최신 입력이 반영됩니다"}`),
     onSuccess: () => setPreviewTick((t) => t + 1),
   }));
@@ -1092,11 +1103,11 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
               {openSns && (
                 <div className="px-5 pb-5 flex flex-col gap-2.5 border-t border-gray-50 pt-4">
                   {socials.map((s) => (
-                    <div key={`${s.id}:${rowRev[s.id] ?? 0}`} className="flex items-center gap-2 bg-gray-50 rounded-lg p-3">
+                    <div key={s.id} data-row-id={s.id} className="flex items-center gap-2 bg-gray-50 rounded-lg p-3">
                       <select value={s.platform} onChange={(e) => { updateSocial(s.id, { platform: e.target.value }); }} className="w-24 px-2 py-2 border border-gray-200 rounded-lg text-xs bg-white">
                         {PLATFORMS.map((p) => <option key={p} value={p}>{PLATFORM_LABELS[p]}</option>)}
                       </select>
-                      <input type="text" defaultValue={s.url} onBlur={(e) => updateSocial(s.id, { url: e.target.value })} placeholder="https://..." className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gray-900" />
+                      <input type="text" data-field="url" defaultValue={s.url} onBlur={(e) => updateSocial(s.id, { url: e.target.value })} placeholder="https://..." className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gray-900" />
                       <button onClick={() => deleteSocial(s.id)} className="text-gray-300 hover:text-red-500">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                       </button>
@@ -1112,7 +1123,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
               <SortableContext items={links.map((l) => l.id)} strategy={verticalListSortingStrategy}>
                 {links.map((link) => (
                   <SortableLinkBlock
-                    key={`${link.id}:${rowRev[link.id] ?? 0}`}
+                    key={link.id}
                     link={link}
                     isOpen={!!openLinks[link.id]}
                     onToggleOpen={() => setOpenLinks({ ...openLinks, [link.id]: !openLinks[link.id] })}
