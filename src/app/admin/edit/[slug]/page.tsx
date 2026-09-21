@@ -10,6 +10,7 @@ import AdminChannelBar from "./admin-channel-bar";
 import AnalyticsTab from "./analytics-tab";
 import GroupLinkEditor from "./group-link-editor";
 import { apiJson, apiRequest } from "@/lib/admin-api";
+import { createFieldSaveTracker } from "@/lib/field-saves";
 import {
   DndContext,
   closestCenter,
@@ -630,11 +631,15 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   // 저장 실패·통신 오류 알림 (감사 12번). 화면 값은 호출부에서 이전 값/서버 상태로 되돌린다.
   const notifyError = (msg: string) => { setToastKind("error"); setToast(msg); };
   const notify = (msg: string) => { setToastKind("info"); setToast(msg); };
+
   const [activeTab, setActiveTab] = useState<"page" | "design" | "analytics">("page");
 
   const [openProfile, setOpenProfile] = useState(false);
   const [openSns, setOpenSns] = useState(false);
   const [openLinks, setOpenLinks] = useState<Record<string, boolean>>({});
+  // 실패 후 되돌린 행은 key 를 바꿔 다시 그린다 (블럭 입력이 defaultValue 비제어라 상태만 바꾸면 화면에 남기 때문)
+  const [rowRev, setRowRev] = useState<Record<string, number>>({});
+  const bumpRev = (id: string) => setRowRev((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }));
 
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
@@ -649,11 +654,38 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
 
+  function refreshPreview() {
+    try {
+      iframeRef.current?.contentWindow?.location.reload();
+    } catch {
+      // cross-origin fallback
+      if (iframeRef.current) iframeRef.current.src = iframeRef.current.src;
+    }
+  }
+
+  // 추적기 콜백은 렌더 중 만들어지는 클로저라 ref(iframe)에 닿는 refreshPreview 를 직접 부르지 않고, 상태 tick 을 올려 effect 에서 미리보기를 갱신한다 (react-hooks/refs)
+  const [previewTick, setPreviewTick] = useState(0);
+  useEffect(() => { if (previewTick > 0) refreshPreview(); }, [previewTick]);
+  // 필드 저장 추적기 (src/lib/field-saves.ts): 행별 요청 직렬화 + 서버 확인값 기준 '필드 단위' 되돌림.
+  // 서로 다른 필드(대표문구·상세문구)를 연달아 고친 뒤 하나만 실패해도 성공한 필드는 유지되고, 실패한 필드만 서버값으로 돌아간다.
+  const [linkTracker] = useState(() => createFieldSaveTracker<LinkRow>({
+    send: async (id, patch) => { const r = await apiJson(`/api/pages/${slug}/links`, "PUT", { id, ...patch }); return r.ok ? { ok: true } : { ok: false, error: r.error }; },
+    applyView: (id, patch, reason) => { setLinks((prev) => prev.map((l) => l.id === id ? { ...l, ...patch } : l)); if (reason === "revert") bumpRev(id); },
+    onError: ({ error, failed, restored }) => {
+      const kept = Object.keys(failed).filter((f) => !(f in restored));
+      notifyError(`블럭 수정 저장 실패 — ${error}. ${Object.keys(restored).length ? `${Object.keys(restored).join(", ")} 은 이전 값으로 되돌렸습니다` : ""}${kept.length ? ` (${kept.join(", ")} 은 더 최신 입력이 반영됩니다)` : ""}`.trim());
+    },
+    onSuccess: () => setPreviewTick((t) => t + 1),
+  }));
+  const [socialTracker] = useState(() => createFieldSaveTracker<SocialRow>({
+    send: async (id, patch) => { const r = await apiJson(`/api/pages/${slug}/socials`, "PUT", { id, ...patch }); return r.ok ? { ok: true } : { ok: false, error: r.error }; },
+    applyView: (id, patch, reason) => { setSocials((prev) => prev.map((s) => s.id === id ? { ...s, ...patch } : s)); if (reason === "revert") bumpRev(id); },
+    onError: ({ error, restored }) => notifyError(`SNS 수정 저장 실패 — ${error}.${Object.keys(restored).length ? " 이전 값으로 되돌렸습니다" : " 더 최신 입력이 반영됩니다"}`),
+    onSuccess: () => setPreviewTick((t) => t + 1),
+  }));
+
   const fetchAll = useCallback(async () => {
-    setLoading(true);
-    setOpenProfile(false);
-    setOpenSns(false);
-    setOpenLinks({});
+    // 상태 갱신은 응답이 온 뒤(콜백)에서만 — effect 본문의 동기 setState 를 피한다 (react-hooks/set-state-in-effect)
     const r = await apiRequest<{ page: PageRow; links: LinkRow[]; socials: SocialRow[] }>(`/api/pages/${slug}`);
     if (!r.ok) {
       if (r.status === 404) { router.push("/admin"); return; }
@@ -662,7 +694,12 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
       return;
     }
     const data = r.data;
+    setOpenProfile(false);
+    setOpenSns(false);
+    setOpenLinks({});
     setPage(data.page);
+    linkTracker.confirm(data.links);
+    socialTracker.confirm(data.socials);
     setLinks(data.links);
     setSocials(data.socials);
     setTitle(data.page.title);
@@ -673,17 +710,9 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     setBadgeColor(data.page.badge_color || null);
     setProfileRing(data.page.profile_ring || false);
     setLoading(false);
-  }, [slug, router]);
+  }, [slug, router, linkTracker, socialTracker]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
-  function refreshPreview() {
-    try {
-      iframeRef.current?.contentWindow?.location.reload();
-    } catch {
-      // cross-origin fallback
-      if (iframeRef.current) iframeRef.current.src = iframeRef.current.src;
-    }
-  }
 
   async function savePageInfo() {
     setSaving(true);
@@ -718,6 +747,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
       return null;
     }
     const created = { ...temp, id: r.data.id };
+    linkTracker.confirm([created]);
     setLinks((prev) => prev.map((l) => l.id === temp.id ? created : l));
     refreshPreview();
     return created;
@@ -729,16 +759,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   }
 
   async function updateLink(id: string, updates: Partial<LinkRow>) {
-    const before = links.find((l) => l.id === id);
-    setLinks((prev) => prev.map((l) => l.id === id ? { ...l, ...updates } : l));
-    const r = await apiJson(`/api/pages/${slug}/links`, "PUT", { id, ...updates });
-    if (!r.ok) {
-      // 서버에 반영되지 않았으므로 화면도 이전 값으로
-      if (before) setLinks((prev) => prev.map((l) => l.id === id ? before : l));
-      notifyError(`블럭 수정 저장 실패 — ${r.error}`);
-      return;
-    }
-    refreshPreview();
+    await linkTracker.save(id, updates); // 낙관적 갱신·순서 보장·필드 단위 되돌림은 추적기가 담당
   }
 
   async function deleteLink(id: string) {
@@ -752,6 +773,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
       notifyError(`블럭 삭제 실패 — ${r.error}`);
       return;
     }
+    linkTracker.forget(id);
     refreshPreview();
   }
 
@@ -802,19 +824,12 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
       return;
     }
     const newId = r.data.id;
+    socialTracker.confirm([{ ...temp, id: newId }]);
     setSocials((prev) => prev.map((s) => s.id === temp.id ? { ...s, id: newId } : s));
     refreshPreview();
   }
   async function updateSocial(id: string, updates: Partial<SocialRow>) {
-    const before = socials.find((s) => s.id === id);
-    setSocials((prev) => prev.map((s) => s.id === id ? { ...s, ...updates } : s));
-    const r = await apiJson(`/api/pages/${slug}/socials`, "PUT", { id, ...updates });
-    if (!r.ok) {
-      if (before) setSocials((prev) => prev.map((s) => s.id === id ? before : s));
-      notifyError(`SNS 수정 저장 실패 — ${r.error}`);
-      return;
-    }
-    refreshPreview();
+    await socialTracker.save(id, updates);
   }
   async function deleteSocial(id: string) {
     const idx = socials.findIndex((s) => s.id === id);
@@ -826,6 +841,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
       notifyError(`SNS 삭제 실패 — ${r.error}`);
       return;
     }
+    socialTracker.forget(id);
     refreshPreview();
   }
   async function deletePage() {
@@ -1076,8 +1092,8 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
               {openSns && (
                 <div className="px-5 pb-5 flex flex-col gap-2.5 border-t border-gray-50 pt-4">
                   {socials.map((s) => (
-                    <div key={s.id} className="flex items-center gap-2 bg-gray-50 rounded-lg p-3">
-                      <select value={s.platform} onChange={(e) => { setSocials(socials.map((x) => x.id === s.id ? { ...x, platform: e.target.value } : x)); updateSocial(s.id, { platform: e.target.value }); }} className="w-24 px-2 py-2 border border-gray-200 rounded-lg text-xs bg-white">
+                    <div key={`${s.id}:${rowRev[s.id] ?? 0}`} className="flex items-center gap-2 bg-gray-50 rounded-lg p-3">
+                      <select value={s.platform} onChange={(e) => { updateSocial(s.id, { platform: e.target.value }); }} className="w-24 px-2 py-2 border border-gray-200 rounded-lg text-xs bg-white">
                         {PLATFORMS.map((p) => <option key={p} value={p}>{PLATFORM_LABELS[p]}</option>)}
                       </select>
                       <input type="text" defaultValue={s.url} onBlur={(e) => updateSocial(s.id, { url: e.target.value })} placeholder="https://..." className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gray-900" />
@@ -1096,7 +1112,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
               <SortableContext items={links.map((l) => l.id)} strategy={verticalListSortingStrategy}>
                 {links.map((link) => (
                   <SortableLinkBlock
-                    key={link.id}
+                    key={`${link.id}:${rowRev[link.id] ?? 0}`}
                     link={link}
                     isOpen={!!openLinks[link.id]}
                     onToggleOpen={() => setOpenLinks({ ...openLinks, [link.id]: !openLinks[link.id] })}

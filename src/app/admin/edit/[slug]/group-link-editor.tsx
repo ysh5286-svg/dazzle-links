@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { apiJson, apiRequest } from "@/lib/admin-api";
+import { createFieldSaveTracker } from "@/lib/field-saves";
 import Image from "next/image";
 import type { GroupLinkRow } from "@/lib/supabase";
 import {
@@ -330,11 +331,18 @@ export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayou
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
 
+  // 필드 저장 추적기: 행별 직렬화 + 서버 확인값 기준 필드 단위 되돌림 (page.tsx 와 같은 규칙)
+  const [tracker] = useState(() => createFieldSaveTracker<GroupLinkRow>({
+    send: async (id, patch) => { const r = await apiJson("/api/group-links", "PUT", { id, ...patch }); return r.ok ? { ok: true } : { ok: false, error: r.error }; },
+    applyView: (id, patch) => setItems((prev) => prev.map((i) => i.id === id ? { ...i, ...patch } : i)),
+    onError: ({ error, restored }) => onError?.(`링크 저장 실패 — ${error}.${Object.keys(restored).length ? " 이전 값으로 되돌렸습니다" : " 더 최신 입력이 반영됩니다"}`),
+    onSuccess: () => onRefresh(),
+  }));
   const fetchItems = useCallback(async () => {
     const r = await apiRequest<GroupLinkRow[]>(`/api/group-links?link_id=${linkId}`);
-    if (r.ok && Array.isArray(r.data)) setItems(r.data);
+    if (r.ok && Array.isArray(r.data)) { tracker.confirm(r.data); setItems(r.data); }
     else if (!r.ok) onError?.(`그룹 링크 목록을 불러오지 못했습니다 — ${r.error}`);
-  }, [linkId, onError]);
+  }, [linkId, onError, tracker]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
@@ -360,29 +368,12 @@ export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayou
   }
 
   async function toggleItem(id: string, enabled: boolean) {
-    const before = items.find((i) => i.id === id);
-    setItems((prev) => prev.map((i) => i.id === id ? { ...i, enabled } : i));
-    const r = await apiJson("/api/group-links", "PUT", { id, enabled });
-    if (!r.ok) {
-      if (before) setItems((prev) => prev.map((i) => i.id === id ? before : i));
-      onError?.(`링크 사용 여부 저장 실패 — ${r.error}`);
-      return;
-    }
-    onRefresh();
+    await tracker.save(id, { enabled });
   }
 
   async function updateItem(id: string, updates: Partial<GroupLinkRow>) {
-    const before = items.find((i) => i.id === id);
-    setItems((prev) => prev.map((i) => i.id === id ? { ...i, ...updates } : i));
-    const r = await apiJson("/api/group-links", "PUT", { id, ...updates });
-    if (!r.ok) {
-      // 편집 모달은 유지(입력 보존), 목록은 이전 값으로
-      if (before) setItems((prev) => prev.map((i) => i.id === id ? before : i));
-      onError?.(`링크 수정 저장 실패 — ${r.error}`);
-      return;
-    }
-    setEditingItem(null);
-    onRefresh();
+    // 편집 모달은 성공했을 때만 닫는다 (실패 시 입력 보존, 목록은 추적기가 서버 확인값으로 되돌림)
+    if (await tracker.save(id, updates)) setEditingItem(null);
   }
 
   async function deleteItem(id: string) {
@@ -395,6 +386,7 @@ export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayou
       onError?.(`링크 삭제 실패 — ${r.error}`);
       return;
     }
+    tracker.forget(id);
     onRefresh();
   }
 
