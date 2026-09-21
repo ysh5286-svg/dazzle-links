@@ -30,7 +30,8 @@ export default function DesignTab({
   onSave,
 }: {
   page: PageRow;
-  onSave: (updates: Partial<PageRow>) => Promise<void>;
+  /** 저장 결과. false 면 입력값을 그대로 유지한다(상위에서 실패 알림) */
+  onSave: (updates: Partial<PageRow>) => Promise<boolean>;
 }) {
   const [bgColor, setBgColor] = useState(page.bg_color || "#f9fafb");
   const [hoverColor, setHoverColor] = useState(page.hover_color || "#e5e7eb");

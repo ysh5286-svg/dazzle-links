@@ -9,6 +9,7 @@ import DesignTab from "./design-tab";
 import AdminChannelBar from "./admin-channel-bar";
 import AnalyticsTab from "./analytics-tab";
 import GroupLinkEditor from "./group-link-editor";
+import { apiJson, apiRequest } from "@/lib/admin-api";
 import {
   DndContext,
   closestCenter,
@@ -402,10 +403,11 @@ function BlockAddModal({ onClose, onSelect }: { onClose: () => void; onSelect: (
 
 // --- Toast ---
 
-function Toast({ message, onClose }: { message: string; onClose: () => void }) {
-  useEffect(() => { const t = setTimeout(onClose, 2000); return () => clearTimeout(t); }, [onClose]);
+function Toast({ message, kind = "info", onClose }: { message: string; kind?: "info" | "error"; onClose: () => void }) {
+  useEffect(() => { const t = setTimeout(onClose, kind === "error" ? 5000 : 2000); return () => clearTimeout(t); }, [onClose, kind]);
   return (
-    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm px-5 py-2.5 rounded-full shadow-lg z-50">
+    <div role={kind === "error" ? "alert" : "status"}
+      className={`fixed bottom-20 left-1/2 -translate-x-1/2 text-white text-sm px-5 py-2.5 rounded-full shadow-lg z-50 ${kind === "error" ? "bg-red-600" : "bg-gray-900"}`}>
       {message}
     </div>
   );
@@ -414,7 +416,7 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
 // --- Sortable Link Block ---
 
 function SortableLinkBlock({
-  link, isOpen, onToggleOpen, onUpdate, onDelete, onToggleEnabled, onCopy, onCopyToPage, onRefreshPreview,
+  link, isOpen, onToggleOpen, onUpdate, onDelete, onToggleEnabled, onCopy, onCopyToPage, onRefreshPreview, onError,
 }: {
   link: LinkRow;
   isOpen: boolean;
@@ -425,6 +427,7 @@ function SortableLinkBlock({
   onCopy: (id: string) => void;
   onCopyToPage: (id: string, targetSlug: string) => void;
   onRefreshPreview: () => void;
+  onError: (message: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id });
   const style = {
@@ -513,7 +516,7 @@ function SortableLinkBlock({
             <input type="text" defaultValue={link.label} onBlur={(e) => onUpdate(link.id, { label: e.target.value })}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
           </div>
-          <GroupLinkEditor linkId={link.id}
+          <GroupLinkEditor linkId={link.id} onError={onError}
             groupLayout={(() => { try { return JSON.parse(link.thumbnail || "{}").layout || "grid3"; } catch { return "grid3"; } })()}
             listMode={(() => { try { return JSON.parse(link.thumbnail || "{}").listMode || "all"; } catch { return "all"; } })()}
             onLayoutChange={(layout, mode) => onUpdate(link.id, { thumbnail: JSON.stringify({ layout, listMode: mode }) })}
@@ -623,6 +626,10 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [toast, setToast] = useState("");
+  const [toastKind, setToastKind] = useState<"info" | "error">("info");
+  // 저장 실패·통신 오류 알림 (감사 12번). 화면 값은 호출부에서 이전 값/서버 상태로 되돌린다.
+  const notifyError = (msg: string) => { setToastKind("error"); setToast(msg); };
+  const notify = (msg: string) => { setToastKind("info"); setToast(msg); };
   const [activeTab, setActiveTab] = useState<"page" | "design" | "analytics">("page");
 
   const [openProfile, setOpenProfile] = useState(false);
@@ -647,9 +654,14 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     setOpenProfile(false);
     setOpenSns(false);
     setOpenLinks({});
-    const res = await fetch(`/api/pages/${slug}`);
-    if (!res.ok) { router.push("/admin"); return; }
-    const data = await res.json();
+    const r = await apiRequest<{ page: PageRow; links: LinkRow[]; socials: SocialRow[] }>(`/api/pages/${slug}`);
+    if (!r.ok) {
+      if (r.status === 404) { router.push("/admin"); return; }
+      setLoading(false);
+      notifyError(`페이지를 불러오지 못했습니다 — ${r.error}`);
+      return;
+    }
+    const data = r.data;
     setPage(data.page);
     setLinks(data.links);
     setSocials(data.socials);
@@ -677,61 +689,86 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     setSaving(true);
     const cleanSlug = newSlug.toLowerCase().replace(/[^a-z0-9_.-]/g, "");
     const updates: Record<string, string | null | boolean> = { title, desc, profile, category, badge_color: badgeColor, profile_ring: profileRing };
-    if (cleanSlug && cleanSlug !== slug) {
-      updates.slug = cleanSlug;
-    }
-    await fetch(`/api/pages/${slug}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updates) });
+    const slugChanged = !!cleanSlug && cleanSlug !== slug;
+    if (slugChanged) updates.slug = cleanSlug;
+    const r = await apiJson(`/api/pages/${slug}`, "PUT", updates);
     setSaving(false);
-    if (cleanSlug && cleanSlug !== slug) {
+    if (!r.ok) {
+      // 입력값은 그대로 두고(재시도 가능) 실패만 알린다. 주소 이동·미리보기 갱신 없음.
+      notifyError(`저장 실패 — ${r.error}`);
+      return;
+    }
+    if (slugChanged) {
       router.replace(`/admin/edit/${cleanSlug}`);
     } else {
+      notify("저장되었습니다");
       refreshPreview();
     }
   }
 
   function tempId() { return "temp_" + Math.random().toString(36).slice(2); }
 
+  // 낙관적으로 추가한 임시 행을 서버 결과로 확정하거나, 실패하면 제거한다
+  async function createLinkRow(temp: LinkRow, payload: Record<string, unknown>): Promise<LinkRow | null> {
+    setLinks((prev) => [...prev, temp]);
+    const r = await apiJson<{ id?: string }>(`/api/pages/${slug}/links`, "POST", payload);
+    if (!r.ok || !r.data?.id) {
+      setLinks((prev) => prev.filter((l) => l.id !== temp.id));
+      notifyError(`블럭 추가 실패 — ${r.ok ? "서버 응답에 id 가 없습니다" : r.error}`);
+      return null;
+    }
+    const created = { ...temp, id: r.data.id };
+    setLinks((prev) => prev.map((l) => l.id === temp.id ? created : l));
+    refreshPreview();
+    return created;
+  }
+
   async function addLink() {
     const temp: LinkRow = { id: tempId(), page_id: page!.id, label: "새 링크", url: "https://", sort_order: links.length, layout: "small", enabled: true, thumbnail: null };
-    setLinks((prev) => [...prev, temp]);
-    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label: temp.label, url: temp.url, sort_order: temp.sort_order, layout: temp.layout, enabled: true }) });
-    const created = await res.json();
-    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
-    refreshPreview();
+    await createLinkRow(temp, { label: temp.label, url: temp.url, sort_order: temp.sort_order, layout: temp.layout, enabled: true });
   }
 
   async function updateLink(id: string, updates: Partial<LinkRow>) {
+    const before = links.find((l) => l.id === id);
     setLinks((prev) => prev.map((l) => l.id === id ? { ...l, ...updates } : l));
-    fetch(`/api/pages/${slug}/links`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...updates }) })
-      .then(() => refreshPreview());
+    const r = await apiJson(`/api/pages/${slug}/links`, "PUT", { id, ...updates });
+    if (!r.ok) {
+      // 서버에 반영되지 않았으므로 화면도 이전 값으로
+      if (before) setLinks((prev) => prev.map((l) => l.id === id ? before : l));
+      notifyError(`블럭 수정 저장 실패 — ${r.error}`);
+      return;
+    }
+    refreshPreview();
   }
 
   async function deleteLink(id: string) {
+    const idx = links.findIndex((l) => l.id === id);
+    const before = idx >= 0 ? links[idx] : undefined;
     setLinks((prev) => prev.filter((l) => l.id !== id));
-    fetch(`/api/pages/${slug}/links`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) })
-      .then(() => refreshPreview());
+    const r = await apiJson(`/api/pages/${slug}/links`, "DELETE", { id });
+    if (!r.ok) {
+      // 삭제되지 않았으므로 같은 자리에 되살린다
+      if (before) setLinks((prev) => { const next = prev.filter((l) => l.id !== id); next.splice(Math.min(idx, next.length), 0, before); return next; });
+      notifyError(`블럭 삭제 실패 — ${r.error}`);
+      return;
+    }
+    refreshPreview();
   }
 
   async function copyLink(id: string) {
     const link = links.find((l) => l.id === id);
     if (!link) return;
     const temp: LinkRow = { ...link, id: tempId(), sort_order: links.length };
-    setLinks((prev) => [...prev, temp]);
-    setToast("블럭이 복사되었습니다");
-    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label: link.label, url: link.url, thumbnail: link.thumbnail, layout: link.layout, enabled: link.enabled, sort_order: links.length }) });
-    const created = await res.json();
-    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
-    refreshPreview();
+    const created = await createLinkRow(temp, { label: link.label, url: link.url, thumbnail: link.thumbnail, layout: link.layout, enabled: link.enabled, sort_order: links.length });
+    if (created) notify("블럭이 복사되었습니다");
   }
 
   async function copyLinkToPage(id: string, targetSlug: string) {
     const link = links.find((l) => l.id === id);
     if (!link) return;
-    await fetch(`/api/pages/${targetSlug}/links`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ label: link.label, url: link.url, thumbnail: link.thumbnail, layout: link.layout, enabled: link.enabled, sort_order: 999 }),
-    });
-    setToast(`"${targetSlug}" 페이지로 복사되었습니다`);
+    const r = await apiJson(`/api/pages/${targetSlug}/links`, "POST", { label: link.label, url: link.url, thumbnail: link.thumbnail, layout: link.layout, enabled: link.enabled, sort_order: 999 });
+    if (!r.ok) { notifyError(`"${targetSlug}" 페이지로 복사 실패 — ${r.error}`); return; }
+    notify(`"${targetSlug}" 페이지로 복사되었습니다`);
   }
 
   async function handleDragEnd(event: DragEndEvent) {
@@ -742,96 +779,92 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     const reordered = arrayMove(links, oldIndex, newIndex);
     setLinks(reordered);
     // Update sort_order for all
-    await Promise.all(reordered.map((link, i) =>
-      fetch(`/api/pages/${slug}/links`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: link.id, sort_order: i }) })
+    const results = await Promise.all(reordered.map((link, i) =>
+      apiJson(`/api/pages/${slug}/links`, "PUT", { id: link.id, sort_order: i })
     ));
+    const failed = results.find((r) => !r.ok);
+    if (failed && !failed.ok) {
+      // 일부만 반영됐을 수 있으므로 서버 상태로 다시 맞춘다
+      notifyError(`순서 저장 실패 — ${failed.error}. 서버 상태로 되돌립니다`);
+      await fetchAll();
+      return;
+    }
     refreshPreview();
   }
 
   async function addSocial() {
     const temp: SocialRow = { id: tempId(), page_id: page!.id, platform: "instagram", url: "https://", sort_order: socials.length };
     setSocials((prev) => [...prev, temp]);
-    const res = await fetch(`/api/pages/${slug}/socials`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ platform: "instagram", url: "https://", sort_order: socials.length }) });
-    const created = await res.json();
-    if (created?.id) setSocials((prev) => prev.map((s) => s.id === temp.id ? { ...s, id: created.id } : s));
+    const r = await apiJson<{ id?: string }>(`/api/pages/${slug}/socials`, "POST", { platform: "instagram", url: "https://", sort_order: socials.length });
+    if (!r.ok || !r.data?.id) {
+      setSocials((prev) => prev.filter((s) => s.id !== temp.id));
+      notifyError(`SNS 추가 실패 — ${r.ok ? "서버 응답에 id 가 없습니다" : r.error}`);
+      return;
+    }
+    const newId = r.data.id;
+    setSocials((prev) => prev.map((s) => s.id === temp.id ? { ...s, id: newId } : s));
     refreshPreview();
   }
   async function updateSocial(id: string, updates: Partial<SocialRow>) {
+    const before = socials.find((s) => s.id === id);
     setSocials((prev) => prev.map((s) => s.id === id ? { ...s, ...updates } : s));
-    fetch(`/api/pages/${slug}/socials`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...updates }) })
-      .then(() => refreshPreview());
+    const r = await apiJson(`/api/pages/${slug}/socials`, "PUT", { id, ...updates });
+    if (!r.ok) {
+      if (before) setSocials((prev) => prev.map((s) => s.id === id ? before : s));
+      notifyError(`SNS 수정 저장 실패 — ${r.error}`);
+      return;
+    }
+    refreshPreview();
   }
   async function deleteSocial(id: string) {
+    const idx = socials.findIndex((s) => s.id === id);
+    const before = idx >= 0 ? socials[idx] : undefined;
     setSocials((prev) => prev.filter((s) => s.id !== id));
-    fetch(`/api/pages/${slug}/socials`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) })
-      .then(() => refreshPreview());
+    const r = await apiJson(`/api/pages/${slug}/socials`, "DELETE", { id });
+    if (!r.ok) {
+      if (before) setSocials((prev) => { const next = prev.filter((s) => s.id !== id); next.splice(Math.min(idx, next.length), 0, before); return next; });
+      notifyError(`SNS 삭제 실패 — ${r.error}`);
+      return;
+    }
+    refreshPreview();
   }
   async function deletePage() {
     if (!confirm(`"${title}" 페이지를 삭제하시겠습니까?`)) return;
-    await fetch(`/api/pages/${slug}`, { method: "DELETE" });
+    const r = await apiRequest(`/api/pages/${slug}`, { method: "DELETE" });
+    if (!r.ok) { notifyError(`페이지 삭제 실패 — ${r.error}`); return; }
     router.push("/admin");
   }
 
   async function addGroupBlock() {
     const data = { label: "그룹 링크", url: "", sort_order: links.length, layout: "group", enabled: true };
-    const temp: LinkRow = { id: tempId(), page_id: page!.id, thumbnail: null, ...data };
-    setLinks((prev) => [...prev, temp]);
-    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-    const created = await res.json();
-    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
+    const created = await createLinkRow({ id: tempId(), page_id: page!.id, thumbnail: null, ...data }, data);
     // 자동으로 펼치기
-    if (created?.id) setOpenLinks((prev) => ({ ...prev, [created.id]: true }));
-    refreshPreview();
+    if (created) setOpenLinks((prev) => ({ ...prev, [created.id]: true }));
   }
 
   async function addSearchBlock() {
     const data = { label: "검색", url: "", sort_order: links.length, layout: "search", enabled: true };
-    const temp: LinkRow = { id: tempId(), page_id: page!.id, thumbnail: null, ...data };
-    setLinks((prev) => [...prev, temp]);
-    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-    const created = await res.json();
-    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
-    refreshPreview();
+    await createLinkRow({ id: tempId(), page_id: page!.id, thumbnail: null, ...data }, data);
   }
 
   async function addKakaoBlock() {
     const data = { label: "카톡 문의/제보", url: "https://pf.kakao.com/", sort_order: links.length, layout: "kakaotalk", enabled: true };
-    const temp: LinkRow = { id: tempId(), page_id: page!.id, thumbnail: null, ...data };
-    setLinks((prev) => [...prev, temp]);
-    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-    const created = await res.json();
-    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
-    refreshPreview();
+    await createLinkRow({ id: tempId(), page_id: page!.id, thumbnail: null, ...data }, data);
   }
 
   async function addVideo() {
     const data = { label: "grid", url: JSON.stringify([""]), sort_order: links.length, layout: "video", enabled: true };
-    const temp: LinkRow = { id: tempId(), page_id: page!.id, thumbnail: null, ...data };
-    setLinks((prev) => [...prev, temp]);
-    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-    const created = await res.json();
-    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
-    refreshPreview();
+    await createLinkRow({ id: tempId(), page_id: page!.id, thumbnail: null, ...data }, data);
   }
 
   async function addText() {
     const data = { label: "텍스트 제목", url: "상세 내용을 입력하세요", sort_order: links.length, layout: "text", enabled: true, thumbnail: JSON.stringify({ align: "center", size: "sm", textLayout: "plain" }) };
-    const temp: LinkRow = { id: tempId(), page_id: page!.id, ...data };
-    setLinks((prev) => [...prev, temp]);
-    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-    const created = await res.json();
-    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
-    refreshPreview();
+    await createLinkRow({ id: tempId(), page_id: page!.id, ...data }, data);
   }
 
   async function addSpacer() {
     const data = { label: "40", url: "", sort_order: links.length, layout: "spacer", enabled: true };
-    const temp: LinkRow = { id: tempId(), page_id: page!.id, thumbnail: null, ...data };
-    setLinks((prev) => [...prev, temp]);
-    const res = await fetch(`/api/pages/${slug}/links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-    const created = await res.json();
-    if (created?.id) setLinks((prev) => prev.map((l) => l.id === temp.id ? { ...l, id: created.id } : l));
-    refreshPreview();
+    await createLinkRow({ id: tempId(), page_id: page!.id, thumbnail: null, ...data }, data);
   }
 
   function handleBlockSelect(type: string) {
@@ -905,7 +938,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
   return (
     <div className="min-h-screen w-full bg-[#f0f2f5] flex flex-col">
       <PageSwitcher currentSlug={slug} currentProfile={profile} />
-      {toast && <Toast message={toast} onClose={() => setToast("")} />}
+      {toast && <Toast message={toast} kind={toastKind} onClose={() => setToast("")} />}
       {showBlockModal && <BlockAddModal onClose={() => setShowBlockModal(false)} onSelect={handleBlockSelect} />}
 
       {/* Admin Channel Bar */}
@@ -953,9 +986,12 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                 socialUrls={Object.fromEntries(socials.map((s) => [s.platform, s.url]))} />
             ) : activeTab === "design" && page ? (
               <DesignTab page={page} onSave={async (updates) => {
-                await fetch(`/api/pages/${slug}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updates) });
+                const r = await apiJson(`/api/pages/${slug}`, "PUT", updates);
+                if (!r.ok) { notifyError(`디자인 저장 실패 — ${r.error}`); return false; }
+                notify("디자인이 저장되었습니다");
                 await fetchAll();
                 refreshPreview();
+                return true;
               }} />
             ) : (
           <div className="py-6 px-5">
@@ -1070,6 +1106,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
                     onCopy={copyLink}
                     onCopyToPage={copyLinkToPage}
                     onRefreshPreview={refreshPreview}
+                    onError={notifyError}
                   />
                 ))}
               </SortableContext>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { apiJson, apiRequest } from "@/lib/admin-api";
 import Image from "next/image";
 import type { GroupLinkRow } from "@/lib/supabase";
 import {
@@ -310,12 +311,14 @@ function ListModeSelector({ value, onChange }: { value: string; onChange: (v: st
 }
 
 // --- Main Editor ---
-export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayoutChange, onRefresh }: {
+export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayoutChange, onRefresh, onError }: {
   linkId: string;
   groupLayout: string;
   listMode: string;
   onLayoutChange: (layout: string, mode: string) => void;
   onRefresh: () => void;
+  /** 저장 실패·통신 오류 알림 (상위 토스트) */
+  onError?: (message: string) => void;
 }) {
   const [items, setItems] = useState<GroupLinkRow[]>([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -328,9 +331,10 @@ export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayou
   );
 
   const fetchItems = useCallback(async () => {
-    const res = await fetch(`/api/group-links?link_id=${linkId}`);
-    if (res.ok) setItems(await res.json());
-  }, [linkId]);
+    const r = await apiRequest<GroupLinkRow[]>(`/api/group-links?link_id=${linkId}`);
+    if (r.ok && Array.isArray(r.data)) setItems(r.data);
+    else if (!r.ok) onError?.(`그룹 링크 목록을 불러오지 못했습니다 — ${r.error}`);
+  }, [linkId, onError]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
@@ -344,13 +348,11 @@ export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayou
       original_price: data.original_price || null,
       sort_order: items.length,
     };
-    const res = await fetch("/api/group-links", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      console.error("Group link add failed:", err);
+    const r = await apiJson("/api/group-links", "POST", payload);
+    if (!r.ok) {
+      // 입력 모달은 열어 둔다 — 사용자가 입력한 값을 잃지 않고 다시 시도할 수 있게
+      onError?.(`링크 추가 실패 — ${r.error}`);
+      return;
     }
     setShowAdd(false);
     await fetchItems();
@@ -358,21 +360,41 @@ export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayou
   }
 
   async function toggleItem(id: string, enabled: boolean) {
+    const before = items.find((i) => i.id === id);
     setItems((prev) => prev.map((i) => i.id === id ? { ...i, enabled } : i));
-    await fetch("/api/group-links", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, enabled }) });
+    const r = await apiJson("/api/group-links", "PUT", { id, enabled });
+    if (!r.ok) {
+      if (before) setItems((prev) => prev.map((i) => i.id === id ? before : i));
+      onError?.(`링크 사용 여부 저장 실패 — ${r.error}`);
+      return;
+    }
     onRefresh();
   }
 
   async function updateItem(id: string, updates: Partial<GroupLinkRow>) {
+    const before = items.find((i) => i.id === id);
     setItems((prev) => prev.map((i) => i.id === id ? { ...i, ...updates } : i));
-    await fetch("/api/group-links", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...updates }) });
+    const r = await apiJson("/api/group-links", "PUT", { id, ...updates });
+    if (!r.ok) {
+      // 편집 모달은 유지(입력 보존), 목록은 이전 값으로
+      if (before) setItems((prev) => prev.map((i) => i.id === id ? before : i));
+      onError?.(`링크 수정 저장 실패 — ${r.error}`);
+      return;
+    }
     setEditingItem(null);
     onRefresh();
   }
 
   async function deleteItem(id: string) {
+    const idx = items.findIndex((i) => i.id === id);
+    const before = idx >= 0 ? items[idx] : undefined;
     setItems((prev) => prev.filter((i) => i.id !== id));
-    await fetch("/api/group-links", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+    const r = await apiJson("/api/group-links", "DELETE", { id });
+    if (!r.ok) {
+      if (before) setItems((prev) => { const next = prev.filter((i) => i.id !== id); next.splice(Math.min(idx, next.length), 0, before); return next; });
+      onError?.(`링크 삭제 실패 — ${r.error}`);
+      return;
+    }
     onRefresh();
   }
 
@@ -383,9 +405,13 @@ export default function GroupLinkEditor({ linkId, groupLayout, listMode, onLayou
     const newIdx = items.findIndex((i) => i.id === over.id);
     const reordered = arrayMove(items, oldIdx, newIdx);
     setItems(reordered);
-    await Promise.all(reordered.map((item, i) =>
-      fetch("/api/group-links", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: item.id, sort_order: i }) })
-    ));
+    const results = await Promise.all(reordered.map((item, i) => apiJson("/api/group-links", "PUT", { id: item.id, sort_order: i })));
+    const failed = results.find((r) => !r.ok);
+    if (failed && !failed.ok) {
+      onError?.(`순서 저장 실패 — ${failed.error}. 서버 상태로 되돌립니다`);
+      await fetchItems();
+      return;
+    }
     onRefresh();
   }
 

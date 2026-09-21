@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiJson, apiRequest } from "@/lib/admin-api";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { PageRow } from "@/lib/supabase";
@@ -78,6 +79,7 @@ export default function PageSwitcher({
   const [showCreate, setShowCreate] = useState(false);
   const [newSlug, setNewSlug] = useState("");
   const [newTitle, setNewTitle] = useState("");
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const sensors = useSensors(
@@ -101,29 +103,30 @@ export default function PageSwitcher({
     const reordered = arrayMove(pages, oldIndex, newIndex);
     setPages(reordered);
     // Update sort_order for all pages
-    await Promise.all(reordered.map((page, i) =>
-      fetch(`/api/pages/${page.slug}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sort_order: i }),
-      })
-    ));
+    const results = await Promise.all(reordered.map((page, i) => apiJson(`/api/pages/${page.slug}`, "PUT", { sort_order: i })));
+    const failed = results.find((r) => !r.ok);
+    if (failed && !failed.ok) {
+      // 일부만 반영됐을 수 있으므로 서버 순서로 되돌린다
+      setError(`순서 저장 실패 — ${failed.error}`);
+      const r = await apiRequest<PageRow[]>("/api/pages");
+      if (r.ok && Array.isArray(r.data)) setPages(r.data);
+    }
   }
 
   async function handleCreate() {
     if (!newSlug || !newTitle) return;
-    const res = await fetch("/api/pages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slug: newSlug, title: newTitle }),
-    });
-    if (res.ok) {
-      setOpen(false);
-      setShowCreate(false);
-      setNewSlug("");
-      setNewTitle("");
-      router.push(`/admin/edit/${newSlug}`);
+    setError("");
+    const res = await apiJson("/api/pages", "POST", { slug: newSlug, title: newTitle });
+    if (!res.ok) {
+      // 실패하면 입력값을 유지하고 이동하지 않는다
+      setError(`페이지 생성 실패 — ${res.error}`);
+      return;
     }
+    setOpen(false);
+    setShowCreate(false);
+    setNewSlug("");
+    setNewTitle("");
+    router.push(`/admin/edit/${newSlug}`);
   }
 
   return (
@@ -161,6 +164,7 @@ export default function PageSwitcher({
                   placeholder="제목 (예: 히어대구)" className="px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gray-900" />
                 <button onClick={handleCreate} disabled={!newSlug || !newTitle}
                   className="py-2 bg-gray-900 text-white text-xs font-medium rounded-lg disabled:opacity-50">생성</button>
+                {error && <p role="alert" className="text-xs text-red-500">{error}</p>}
               </div>
             ) : (
               <div className="border-t border-gray-100">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import { apiJson } from "@/lib/admin-api";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import type { PageRow } from "@/lib/supabase";
@@ -19,6 +20,7 @@ export default function AdminChannelBar({ currentSlug }: { currentSlug: string }
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [error, setError] = useState("");
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartPos = useRef({ x: 0, y: 0 });
 
@@ -64,9 +66,15 @@ export default function AdminChannelBar({ currentSlug }: { currentSlug: string }
     dragOverItem.current = null;
     setDraggingId(null);
     // Save new order
-    await Promise.all(pages.map((p, i) =>
-      fetch(`/api/pages/${p.slug}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sort_order: i }) })
-    ));
+    const results = await Promise.all(pages.map((p, i) => apiJson(`/api/pages/${p.slug}`, "PUT", { sort_order: i })));
+    const failed = results.find((r) => !r.ok);
+    if (failed && !failed.ok) {
+      // 일부만 반영됐을 수 있으므로 캐시를 버리고 서버 순서로 다시 맞춘다
+      cachedPages = null;
+      fetchPages();
+      setError(`순서 저장 실패 — ${failed.error}`);
+      return;
+    }
     cachedPages = pages;
   }
 
@@ -113,10 +121,13 @@ export default function AdminChannelBar({ currentSlug }: { currentSlug: string }
 
   // Add page
   async function addPage(slug: string, title: string) {
-    await fetch("/api/pages", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slug, title }),
-    });
+    const r = await apiJson("/api/pages", "POST", { slug, title });
+    if (!r.ok) {
+      // 생성되지 않았으면 이동하지 않고 모달을 유지한다
+      setError(`페이지 생성 실패 — ${r.error}`);
+      return;
+    }
+    setError("");
     cachedPages = null;
     fetchPages();
     setShowAddModal(false);
@@ -129,7 +140,8 @@ export default function AdminChannelBar({ currentSlug }: { currentSlug: string }
 
   return (
     <>
-      {showAddModal && <AddPageModal onClose={() => setShowAddModal(false)} onAdd={addPage} />}
+      {showAddModal && <AddPageModal onClose={() => { setShowAddModal(false); setError(""); }} onAdd={addPage} serverError={error} />}
+      {error && !showAddModal && <p role="alert" className="fixed top-2 left-1/2 -translate-x-1/2 z-50 text-xs text-white bg-red-600 px-3 py-1.5 rounded-full shadow">{error}</p>}
       <div className="bg-white border-b border-gray-200 px-4 py-2 shrink-0 relative overflow-hidden">
         <button onClick={() => scrollBy(-1)}
           className="hidden md:flex absolute left-1 top-1/2 -translate-y-1/2 z-10 w-7 h-7 bg-white/90 border border-gray-200 rounded-full items-center justify-center shadow-sm hover:bg-gray-50">
@@ -201,7 +213,7 @@ export default function AdminChannelBar({ currentSlug }: { currentSlug: string }
 
 // --- Add Page Modal ---
 
-function AddPageModal({ onClose, onAdd }: { onClose: () => void; onAdd: (slug: string, title: string) => void }) {
+function AddPageModal({ onClose, onAdd, serverError }: { onClose: () => void; onAdd: (slug: string, title: string) => void; serverError?: string }) {
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
@@ -236,6 +248,7 @@ function AddPageModal({ onClose, onAdd }: { onClose: () => void; onAdd: (slug: s
               </div>
             </div>
             {error && <p className="text-xs text-red-500">{error}</p>}
+            {serverError && <p role="alert" className="text-xs text-red-500 mt-2">{serverError}</p>}
             <button onClick={handleSubmit} className="w-full py-3 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 mt-2">
               추가
             </button>
