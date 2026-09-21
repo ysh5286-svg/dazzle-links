@@ -115,7 +115,8 @@ export async function GET(request: NextRequest) {
   }
 
   // 모든 이벤트 가져오기 — 서버 응답 상한(기본 1,000행)에 잘리지 않도록 안정 정렬(created_at, id)로 페이지 순회.
-  // 중간 페이지 오류는 부분 합계 대신 500 으로 알린다.
+  // analytics.id 는 uuid PRIMARY KEY (2026-09-21 운영 카탈로그 확인: 컬럼 id/page_slug/link_id/event_type/created_at/referer/country,
+  // PK analytics_pkey(id)) — 고유 키 tiebreak 는 필수이며 폴백 없음. 중간 페이지 오류·총 건수 미달은 부분 합계 대신 500 으로 알린다.
   type EventRow = { created_at: string; event_type: string; link_id: string | null; referer: string | null; country: string | null };
   let rows: EventRow[];
   try {
@@ -130,7 +131,7 @@ export async function GET(request: NextRequest) {
         for (const o of order) q = q.order(o.column, { ascending: o.ascending !== false });
         return q.range(f, t);
       },
-      { order: [{ column: "created_at", ascending: true }, { column: "id", ascending: true, optional: true }], pageSize: 1000 },
+      { order: [{ column: "created_at", ascending: true }, { column: "id", ascending: true }], pageSize: 1000 },
     );
   } catch (e) {
     const page = e instanceof PagedSelectError ? e.page : 0;
