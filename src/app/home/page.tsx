@@ -97,6 +97,7 @@ export default async function ChannelsPage() {
         <p className="mt-2 text-xs text-gray-300">
           Powered by Dazzle People
           {/* 일반 링크(새로 불러오기) — 앱 안 이동은 로그인 전 '로그인 화면으로' 결과를 기억해 로그인 뒤에도 안 넘어갔음(2026-10-15) */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- 일부러 새로 불러오기(위 주석) */}
           <a
             href="/admin"
             aria-label="관리자"
