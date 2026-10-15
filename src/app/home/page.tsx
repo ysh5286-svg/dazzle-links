@@ -96,14 +96,14 @@ export default async function ChannelsPage() {
         {/* Footer — 마지막 점(.)은 어드민 진입 숨김 링크 */}
         <p className="mt-2 text-xs text-gray-300">
           Powered by Dazzle People
-          <Link
+          {/* 일반 링크(새로 불러오기) — 앱 안 이동은 로그인 전 '로그인 화면으로' 결과를 기억해 로그인 뒤에도 안 넘어갔음(2026-10-15) */}
+          <a
             href="/admin"
             aria-label="관리자"
-            prefetch={false}
             className="cursor-text text-gray-300 no-underline hover:text-gray-300"
           >
             .
-          </Link>
+          </a>
         </p>
       </main>
     </div>

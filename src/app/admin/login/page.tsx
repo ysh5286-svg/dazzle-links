@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function AdminLogin() {
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,7 +22,10 @@ export default function AdminLogin() {
     const data = await res.json();
 
     if (res.ok) {
-      router.push("/admin");
+      // 새로 불러오기로 이동(2026-10-15) — 로그인 전에 /admin 을 열었다가 로그인 화면으로 넘어온 경우(공개 페이지 하단 숨김 링크 등)
+      // 앱 안 이동(router.push)은 기억해 둔 '로그인 화면으로' 결과를 다시 써서 화면이 안 넘어갔음. 새 로그인 쿠키로 서버가 다시 판단하게 함
+      window.location.assign("/admin");
+      return;
     } else {
       setError(data.error || "로그인 실패");
     }
