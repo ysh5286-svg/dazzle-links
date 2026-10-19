@@ -2,7 +2,8 @@ import { notFound, permanentRedirect } from "next/navigation";
 
 // 계정명이 바뀌어 주소(slug)를 바꾼 페이지 — 옛 주소로 들어오면 새 주소로(인스타 소개 등에 남은 옛 링크 보호). 옛 주소에 페이지가 아직 있으면 그대로 보여 줌
 const SLUG_ALIASES: Record<string, string> = {
-  muksong2: "muksung2",   // 2026-10-15 먹송이 → 먹숭이
+  muksong2: "nyom._.song",   // 2026-10-15 먹송이 → 먹숭이 → 2026-10-19 송뇸뇸
+  muksung2: "nyom._.song",   // 2026-10-19 먹숭이 → 송뇸뇸(인스타 nyom._.song)
 };
 import Image from "next/image";
 import type { Metadata } from "next";
