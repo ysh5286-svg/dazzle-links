@@ -21,6 +21,8 @@ export type DialogOptions = {
   danger?: boolean;
   /** 입력 창 안내 글자 */
   placeholder?: string;
+  /** 비밀번호·PIN 입력 — 글자를 가리고 저장된 비밀번호 자동 채움 안 함 */
+  password?: boolean;
 };
 type Kind = 'alert' | 'confirm' | 'prompt';
 type Req = { id: number; kind: Kind; message: string; defaultValue: string; opts: DialogOptions; resolve: (v: unknown) => void };
@@ -123,6 +125,8 @@ function DialogBox({ req }: { req: Req }) {
           {req.kind === 'prompt' && (
             <input
               ref={inputRef}
+              type={req.opts.password ? 'password' : 'text'}
+              autoComplete={req.opts.password ? 'new-password' : 'off'}
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder={req.opts.placeholder}
