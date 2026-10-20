@@ -100,16 +100,20 @@ function DialogBox({ req }: { req: Req }) {
   const cancel = () => close(req, cancelValue);
 
   useEffect(() => {
-    // 입력 창은 기본값을 모두 선택(바로 고쳐 쓰기), 그 밖에는 확인 버튼에 포커스
-    const t = setTimeout(() => { if (req.kind === 'prompt') { inputRef.current?.focus(); inputRef.current?.select(); } else okRef.current?.focus(); }, 0);
-    // Esc·Enter 는 이 팝업이 먼저 받고 뒤 화면(모달 닫기 등)으로 넘기지 않음
+    // Esc·Enter 는 이 팝업이 먼저 받고 뒤 화면(모달 닫기 등)으로 넘기지 않음(매 그리기마다 최신 값으로 다시 붙임)
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); cancel(); }
       else if (e.key === 'Enter' && !e.isComposing && !e.shiftKey) { e.preventDefault(); e.stopImmediatePropagation(); ok(); }
     };
     window.addEventListener('keydown', onKey, true);
-    return () => { clearTimeout(t); window.removeEventListener('keydown', onKey, true); };
+    return () => { window.removeEventListener('keydown', onKey, true); };
   });
+  useEffect(() => {
+    // 처음 열릴 때 한 번만 — 입력 창은 기본값을 모두 선택(바로 고쳐 쓰기), 그 밖에는 확인 버튼에 포커스.
+    // (2026-10-21 고침: 예전엔 글자를 칠 때마다 다시 전체 선택돼 한글이 한 글자씩 덮어써졌음)
+    const t = setTimeout(() => { if (req.kind === 'prompt') { inputRef.current?.focus(); inputRef.current?.select(); } else okRef.current?.focus(); }, 0);
+    return () => clearTimeout(t);
+  }, [req.kind]);
 
   const okText = req.opts.okText || '확인';
   const cancelText = req.opts.cancelText || '취소';
