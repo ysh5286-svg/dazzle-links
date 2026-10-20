@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 
 /**
  * 앱 안 팝업(2026-10-20) — 브라우저 기본 alert/confirm/prompt 대신.
@@ -10,6 +10,8 @@ import { createPortal } from 'react-dom';
  * 사용: `await appConfirm('삭제할까요?')` → true/false · `await appPrompt('이름', '기본값')` → 문자열/null · `await appAlert('완료')`.
  * 화면 맨 위(레이아웃)에 <AppDialogHost /> 가 있어야 앱 팝업으로 뜬다 — 없으면(테스트 등) 브라우저 기본 창으로 대신.
  * 여러 개가 겹치면 차례로(먼저 부른 것부터). Enter = 확인, Esc = 취소(입력 창 포함). 뒤 화면의 '바깥 누르면 닫기'·Esc 는 막음.
+ * 팝업은 body 끝의 따로 된 React 뿌리에 그림 — 팝업 안 클릭이 document 로 올라가지 않아, 뒤에 열린 창의
+ * "바깥 누르면 닫기"(document mousedown 등)가 확인 버튼 누름을 바깥 클릭으로 잘못 알고 닫히지 않게.
  */
 export type DialogOptions = {
   title?: string;
@@ -57,17 +59,34 @@ function close(req: Req, value: unknown) {
   req.resolve(value);
 }
 
-/** 레이아웃 맨 아래에 한 번 — 앱 팝업을 그리는 자리 */
+/** 팝업 안에서 시작한 누름·클릭은 여기서 멈춤(뒤 화면 document 리스너로 안 감) */
+const SHIELD_EVENTS = ['click', 'dblclick', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'contextmenu'] as const;
+
+/** 레이아웃 맨 아래에 한 번 — 앱 팝업을 그리는 자리(화면에는 아무것도 안 그리고 body 끝에 따로 된 뿌리를 만듦) */
 export function AppDialogHost() {
-  const req = useSyncExternalStore(subscribe, head, () => null);
-  const [mounted, setMounted] = useState(false);
   useEffect(() => {
     hosts++;
-    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect -- 브라우저에서만 그림(포털)
-    return () => { hosts--; };
+    const el = document.createElement('div');
+    el.setAttribute('data-app-dialog-root', '');
+    document.body.appendChild(el);
+    const shield = (e: Event) => e.stopPropagation();
+    for (const t of SHIELD_EVENTS) el.addEventListener(t, shield);
+    const root = createRoot(el);
+    const render = () => {
+      const req = head();
+      root.render(req ? <DialogBox key={req.id} req={req} /> : null);
+    };
+    render();
+    const unsub = subscribe(render);
+    return () => {
+      hosts--;
+      unsub();
+      for (const t of SHIELD_EVENTS) el.removeEventListener(t, shield);
+      // 다른 뿌리가 그리는 중에 바로 내리면 React 경고 — 한 박자 뒤 정리
+      setTimeout(() => { root.unmount(); el.remove(); }, 0);
+    };
   }, []);
-  if (!mounted || !req) return null;
-  return createPortal(<DialogBox key={req.id} req={req} />, document.body);
+  return null;
 }
 
 function DialogBox({ req }: { req: Req }) {
@@ -90,16 +109,14 @@ function DialogBox({ req }: { req: Req }) {
     return () => { clearTimeout(t); window.removeEventListener('keydown', onKey, true); };
   });
 
-  const stop = (e: React.SyntheticEvent) => e.stopPropagation();
   const okText = req.opts.okText || '확인';
   const cancelText = req.opts.cancelText || '취소';
   return (
     <div
       className="fixed inset-0 z-[5000] flex items-center justify-center bg-black/45 p-4"
       role="alertdialog" aria-modal="true" aria-label={req.opts.title || req.message.slice(0, 60)} data-testid="app-dialog" data-kind={req.kind}
-      onClick={stop} onMouseDown={stop} onPointerDown={stop} onTouchStart={stop}
     >
-      <div className="w-full max-w-sm rounded-2xl bg-white text-slate-900 shadow-2xl dark:bg-slate-800 dark:text-slate-100" onClick={stop}>
+      <div className="w-full max-w-sm rounded-2xl bg-white text-slate-900 shadow-2xl dark:bg-slate-800 dark:text-slate-100">
         <div className="px-5 pt-5 pb-4">
           {req.opts.title && <h2 className="mb-1.5 text-[15px] font-bold">{req.opts.title}</h2>}
           <p className="whitespace-pre-wrap break-words text-[14px] leading-relaxed max-h-[55vh] overflow-y-auto" data-testid="app-dialog-message">{req.message}</p>
