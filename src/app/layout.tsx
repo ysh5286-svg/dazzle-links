@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AppDialogHost } from "@/lib/appDialog";
 
 export const metadata: Metadata = {
   title: "Dazzle Links",
@@ -23,6 +24,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col items-center bg-[#f9fafb]">
         {children}
+        <AppDialogHost />
       </body>
     </html>
   );

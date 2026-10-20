@@ -11,6 +11,7 @@ import AnalyticsTab from "./analytics-tab";
 import GroupLinkEditor from "./group-link-editor";
 import { apiJson, apiRequest } from "@/lib/admin-api";
 import { createFieldSaveTracker } from "@/lib/field-saves";
+import { appConfirm } from "@/lib/appDialog";
 import {
   DndContext,
   closestCenter,
@@ -856,7 +857,7 @@ export default function EditPage({ params }: { params: Promise<{ slug: string }>
     refreshPreview();
   }
   async function deletePage() {
-    if (!confirm(`"${title}" 페이지를 삭제하시겠습니까?`)) return;
+    if (!(await appConfirm(`"${title}" 페이지를 삭제하시겠습니까?`, { danger: true }))) return;
     const r = await apiRequest(`/api/pages/${slug}`, { method: "DELETE" });
     if (!r.ok) { notifyError(`페이지 삭제 실패 — ${r.error}`); return; }
     router.push("/admin");
